@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HeladeriaPOS.Views.ProductConfiguratorPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Configurar producto"
+    BackgroundColor="#F8F9FA">
+
+    <Grid RowDefinitions="*,Auto" Padding="22">
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Spacing="18" MaximumWidthRequest="720" HorizontalOptions="Center">
+                <Border BackgroundColor="#FFF4F4" Stroke="#F1D0D0" StrokeThickness="1" Padding="16">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="14" />
+                    </Border.StrokeShape>
+                    <VerticalStackLayout Spacing="5">
+                        <Label x:Name="ProductNameText" FontSize="26" FontAttributes="Bold" TextColor="#9F1E1E" />
+                        <Label x:Name="BaseHintText" FontSize="15" TextColor="#666666" LineBreakMode="WordWrap" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <VerticalStackLayout x:Name="SnackPreparationSection" IsVisible="False" Spacing="8">
+                    <Label Text="Preparación" FontSize="20" FontAttributes="Bold" />
+                    <RadioButton x:Name="SnackNormalRadio" GroupName="SnackPreparation" Content="Normal — $35" IsChecked="True" Style="{StaticResource TouchRadioStyle}" />
+                    <RadioButton x:Name="SnackPreparedRadio" GroupName="SnackPreparation" Content="Preparado con todos los ingredientes — $65" Style="{StaticResource TouchRadioStyle}" />
+                    <RadioButton x:Name="SnackMissingRadio" GroupName="SnackPreparation" Content="Sin algún ingrediente — $60" Style="{StaticResource TouchRadioStyle}" />
+                </VerticalStackLayout>
+
+                <VerticalStackLayout x:Name="CookedSection" IsVisible="False" Spacing="9">
+                    <Label Text="Preparación" FontSize="20" FontAttributes="Bold" />
+                    <Grid ColumnDefinitions="*,Auto" Padding="0,6">
+                        <VerticalStackLayout>
+                            <Label Text="Cocinadas" FontSize="18" FontAttributes="Bold" />
+                            <Label Text="Normal $30 · Cocinada $35" FontSize="13" TextColor="#777777" />
+                        </VerticalStackLayout>
+                        <Switch x:Name="CookedSwitch" Grid.Column="1" Scale="1.35" VerticalOptions="Center" />
+                    </Grid>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout x:Name="SnackExtrasSection" IsVisible="False" Spacing="8">
+                    <Label Text="Ingredientes extra" FontSize="20" FontAttributes="Bold" />
+                    <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
+                        <VerticalStackLayout VerticalOptions="Center">
+                            <Label Text="+ Ingrediente extra" FontSize="17" FontAttributes="Bold" />
+                            <Label Text="$10 por unidad" FontSize="13" TextColor="#777777" />
+                        </VerticalStackLayout>
+                        <Button Grid.Column="1" Text="−" Style="{StaticResource QuantityButtonStyle}" Clicked="SnackExtra_Clicked" />
+                        <Border Grid.Column="2" BackgroundColor="#F2F4F6" Stroke="#D8DDE2" StrokeThickness="1" MinimumWidthRequest="58" HeightRequest="52">
+                            <Border.StrokeShape><RoundRectangle CornerRadius="12" /></Border.StrokeShape>
+                            <Label x:Name="SnackExtraValue" Text="0" FontSize="20" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                        </Border>
+                        <Button Grid.Column="3" Text="+" Style="{StaticResource QuantityButtonStyle}" Clicked="SnackExtra_Clicked" />
+                    </Grid>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout x:Name="CupSizeSection" IsVisible="False" Spacing="8">
+                    <Label Text="Tamaño obligatorio" FontSize="20" FontAttributes="Bold" />
+                    <RadioButton x:Name="SizeSmallRadio" GroupName="IceCreamSize" Content="Chico — $25" Style="{StaticResource TouchRadioStyle}" />
+                    <RadioButton x:Name="SizeMediumRadio" GroupName="IceCreamSize" Content="Mediano — $35" Style="{StaticResource TouchRadioStyle}" />
+                    <RadioButton x:Name="SizeLargeRadio" GroupName="IceCreamSize" Content="Grande — $45" Style="{StaticResource TouchRadioStyle}" />
+                    <RadioButton x:Name="SizeJumboRadio" GroupName="IceCreamSize" Content="Jumbo — $55" Style="{StaticResource TouchRadioStyle}" />
+                </VerticalStackLayout>
+
+                <VerticalStackLayout x:Name="BasketSizeSection" IsVisible="False" Spacing="8">
+                    <Label Text="Tamaño obligatorio" FontSize="20" FontAttributes="Bold" />
+                    <RadioButton x:Name="SizeDoubleRadio" GroupName="IceCreamSize" Content="Doble — $45" Style="{StaticResource TouchRadioStyle}" />
+                    <RadioButton x:Name="SizeTripleRadio" GroupName="IceCreamSize" Content="Triple — $55" Style="{StaticResource TouchRadioStyle}" />
+                </VerticalStackLayout>
+
+                <VerticalStackLayout x:Name="IceCreamModifiersSection" IsVisible="False" Spacing="8">
+                    <Label Text="Preparación del helado" FontSize="20" FontAttributes="Bold" />
+                    <RadioButton x:Name="PreparationNoneRadio" GroupName="IceCreamPreparation" Content="Sin preparación extra" IsChecked="True" Style="{StaticResource TouchRadioStyle}" />
+                    <RadioButton x:Name="PreparationSingleRadio" GroupName="IceCreamPreparation" Content="Un solo ingrediente — +$5" Style="{StaticResource TouchRadioStyle}" />
+                    <RadioButton x:Name="PreparationCombinedRadio" GroupName="IceCreamPreparation" Content="Chocolate o mermelada + cereal — +$10" Style="{StaticResource TouchRadioStyle}" />
+
+                    <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8" Margin="0,8,0,0">
+                        <VerticalStackLayout VerticalOptions="Center">
+                            <Label Text="Bola extra de helado" FontSize="17" FontAttributes="Bold" />
+                            <Label Text="$20 por bola" FontSize="13" TextColor="#777777" />
+                        </VerticalStackLayout>
+                        <Button Grid.Column="1" Text="−" Style="{StaticResource QuantityButtonStyle}" Clicked="ExtraScoops_Clicked" />
+                        <Border Grid.Column="2" BackgroundColor="#F2F4F6" Stroke="#D8DDE2" StrokeThickness="1" MinimumWidthRequest="58" HeightRequest="52">
+                            <Border.StrokeShape><RoundRectangle CornerRadius="12" /></Border.StrokeShape>
+                            <Label x:Name="ExtraScoopsValue" Text="0" FontSize="20" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                        </Border>
+                        <Button Grid.Column="3" Text="+" Style="{StaticResource QuantityButtonStyle}" Clicked="ExtraScoops_Clicked" />
+                    </Grid>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout x:Name="ContainerSizeSection" IsVisible="False" Spacing="8">
+                    <Label Text="Tamaño obligatorio" FontSize="20" FontAttributes="Bold" />
+                    <RadioButton x:Name="SizeHalfLiterRadio" GroupName="IceCreamSize" Content="Medio litro — $65" Style="{StaticResource TouchRadioStyle}" CheckedChanged="ContainerSize_CheckedChanged" />
+                    <RadioButton x:Name="SizeOneLiterRadio" GroupName="IceCreamSize" Content="1 litro — $110" Style="{StaticResource TouchRadioStyle}" CheckedChanged="ContainerSize_CheckedChanged" />
+                    <RadioButton x:Name="SizeFiveLiterRadio" GroupName="IceCreamSize" Content="Bote 5 litros — $450" Style="{StaticResource TouchRadioStyle}" CheckedChanged="ContainerSize_CheckedChanged" />
+                    <RadioButton x:Name="SizeTwelveLiterRadio" GroupName="IceCreamSize" Content="Bote 12 litros — $850" Style="{StaticResource TouchRadioStyle}" CheckedChanged="ContainerSize_CheckedChanged" />
+
+                    <Grid x:Name="ContainerPreparationExtras" IsVisible="False" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8" Margin="0,8,0,0">
+                        <VerticalStackLayout VerticalOptions="Center">
+                            <Label Text="Ingredientes de preparación" FontSize="17" FontAttributes="Bold" />
+                            <Label Text="$10 por ingrediente (½ L y 1 L)" FontSize="13" TextColor="#777777" />
+                        </VerticalStackLayout>
+                        <Button Grid.Column="1" Text="−" Style="{StaticResource QuantityButtonStyle}" Clicked="ContainerIngredient_Clicked" />
+                        <Border Grid.Column="2" BackgroundColor="#F2F4F6" Stroke="#D8DDE2" StrokeThickness="1" MinimumWidthRequest="58" HeightRequest="52">
+                            <Border.StrokeShape><RoundRectangle CornerRadius="12" /></Border.StrokeShape>
+                            <Label x:Name="ContainerIngredientValue" Text="0" FontSize="20" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                        </Border>
+                        <Button Grid.Column="3" Text="+" Style="{StaticResource QuantityButtonStyle}" Clicked="ContainerIngredient_Clicked" />
+                    </Grid>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout x:Name="SpecialtySection" IsVisible="False" Spacing="10">
+                    <Label Text="Extras opcionales" FontSize="20" FontAttributes="Bold" />
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" MinimumHeightRequest="48">
+                        <CheckBox x:Name="ChantillyCheck" Scale="1.25" VerticalOptions="Center" />
+                        <Label Grid.Column="1" Text="Crema Chantilly — +$10" FontSize="18" VerticalTextAlignment="Center" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
+                        <VerticalStackLayout VerticalOptions="Center">
+                            <Label Text="Cualquier otro ingrediente" FontSize="17" FontAttributes="Bold" />
+                            <Label Text="$5 por unidad" FontSize="13" TextColor="#777777" />
+                        </VerticalStackLayout>
+                        <Button Grid.Column="1" Text="−" Style="{StaticResource QuantityButtonStyle}" Clicked="OtherIngredient_Clicked" />
+                        <Border Grid.Column="2" BackgroundColor="#F2F4F6" Stroke="#D8DDE2" StrokeThickness="1" MinimumWidthRequest="58" HeightRequest="52">
+                            <Border.StrokeShape><RoundRectangle CornerRadius="12" /></Border.StrokeShape>
+                            <Label x:Name="OtherIngredientValue" Text="0" FontSize="20" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                        </Border>
+                        <Button Grid.Column="3" Text="+" Style="{StaticResource QuantityButtonStyle}" Clicked="OtherIngredient_Clicked" />
+                    </Grid>
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="12" MaximumWidthRequest="720" HorizontalOptions="Center" Margin="0,18,0,0">
+            <Button Text="Cancelar"
+                    Style="{StaticResource TouchButtonStyle}"
+                    Clicked="Cancel_Clicked"
+                    BackgroundColor="#EEEEEE"
+                    TextColor="#444444" />
+            <Button Grid.Column="1"
+                    Text="Agregar al ticket"
+                    Style="{StaticResource TouchButtonStyle}"
+                    Clicked="Add_Clicked"
+                    BackgroundColor="{StaticResource CheckoutGreen}"
+                    TextColor="White" />
+        </Grid>
+    </Grid>
+</ContentPage>
