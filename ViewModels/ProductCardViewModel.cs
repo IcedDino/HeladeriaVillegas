@@ -11,7 +11,7 @@ public sealed class ProductCardViewModel
     public Product Model { get; }
     public string Name => Model.Name;
     public string Tag => Model.Tag ?? string.Empty;
-    public string ImagePath => Model.ImagePath ?? "placeholder.png";
+    public string ImagePath => "placeholder.png";
     public decimal BasePrice => Model.BasePrice;
     public string BasePriceDisplay => BasePrice.ToString("C0", CurrencyCulture);
     public IAsyncRelayCommand SelectCommand { get; }

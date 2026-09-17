@@ -44,6 +44,7 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(TotalDisplay))]
+    [NotifyPropertyChangedFor(nameof(CheckoutLabel))]
     private decimal total;
 
     [ObservableProperty]
@@ -72,6 +73,15 @@ public partial class MainViewModel : ObservableObject
     public string DiscountDisplay => DiscountApplied.ToString("C0", CurrencyCulture);
     public string TotalDisplay => Total.ToString("C0", CurrencyCulture);
     public string ChangeDisplay => Change.ToString("C0", CurrencyCulture);
+    public string CheckoutLabel => $"Cobrar & Registrar  ·  {TotalDisplay}";
+    public string CartItemCountDisplay
+    {
+        get
+        {
+            int count = Cart.Sum(item => item.Quantity);
+            return $"{count} {(count == 1 ? "artículo" : "artículos")}";
+        }
+    }
 
     public MainViewModel(
         DatabaseInitializer databaseInitializer,
@@ -191,6 +201,7 @@ public partial class MainViewModel : ObservableObject
 
     public void CalculateTotal()
     {
+        OnPropertyChanged(nameof(CartItemCountDisplay));
         decimal baseSubtotal = 0m;
         decimal extrasSubtotal = 0m;
 
@@ -327,6 +338,7 @@ public partial class MainViewModel : ObservableObject
     private void NotifyCartStateChanged()
     {
         OnPropertyChanged(nameof(HasItemsInCart));
+        OnPropertyChanged(nameof(CartItemCountDisplay));
         CheckoutCommand.NotifyCanExecuteChanged();
     }
 

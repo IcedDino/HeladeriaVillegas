@@ -5,18 +5,17 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
     <Application.Resources>
         <ResourceDictionary>
-            <Color x:Key="BrandRed">#D32F2F</Color>
-            <Color x:Key="BrandDarkRed">#9F1E1E</Color>
-            <Color x:Key="CheckoutGreen">#00796B</Color>
-            <Color x:Key="PageBackground">#FFF7F7F8</Color>
-            <Color x:Key="PanelBackground">#F8F9FA</Color>
-            <Color x:Key="SoftBorder">#E3E5E8</Color>
-            <Color x:Key="TextPrimary">#292929</Color>
-            <Color x:Key="TextSecondary">#737373</Color>
+            <Color x:Key="BrandRed">#B80035</Color>
+            <Color x:Key="BrandDarkRed">#920028</Color>
+            <Color x:Key="CheckoutGreen">#006C4A</Color>
+            <Color x:Key="PageBackground">#FAF8FF</Color>
+            <Color x:Key="PanelBackground">#F2F3FF</Color>
+            <Color x:Key="SoftBorder">#E8E9F3</Color>
+            <Color x:Key="TextPrimary">#131B2E</Color>
+            <Color x:Key="TextSecondary">#5C6477</Color>
 
             <Style TargetType="Label">
                 <Setter Property="TextColor" Value="{StaticResource TextPrimary}" />
-                <Setter Property="FontFamily" Value="Segoe UI" />
             </Style>
 
             <Style x:Key="TouchButtonStyle" TargetType="Button">
@@ -28,13 +27,13 @@
             </Style>
 
             <Style x:Key="CategoryButtonStyle" TargetType="Button" BasedOn="{StaticResource TouchButtonStyle}">
-                <Setter Property="MinimumWidthRequest" Value="170" />
-                <Setter Property="MinimumHeightRequest" Value="64" />
+                <Setter Property="MinimumWidthRequest" Value="140" />
+                <Setter Property="MinimumHeightRequest" Value="52" />
                 <Setter Property="BackgroundColor" Value="White" />
                 <Setter Property="TextColor" Value="#343434" />
                 <Setter Property="BorderColor" Value="{StaticResource SoftBorder}" />
                 <Setter Property="BorderWidth" Value="1" />
-                <Setter Property="FontSize" Value="17" />
+                <Setter Property="FontSize" Value="15" />
             </Style>
 
             <Style x:Key="QuantityButtonStyle" TargetType="Button">
@@ -52,21 +51,21 @@
 
             <Style x:Key="QuickCashButtonStyle" TargetType="Button">
                 <Setter Property="MinimumWidthRequest" Value="86" />
-                <Setter Property="MinimumHeightRequest" Value="50" />
+                <Setter Property="MinimumHeightRequest" Value="44" />
                 <Setter Property="Padding" Value="12,8" />
                 <Setter Property="CornerRadius" Value="10" />
                 <Setter Property="FontSize" Value="15" />
                 <Setter Property="FontAttributes" Value="Bold" />
-                <Setter Property="BackgroundColor" Value="#E8F3FF" />
-                <Setter Property="TextColor" Value="#174A80" />
-                <Setter Property="BorderColor" Value="#C8DDF8" />
+                <Setter Property="BackgroundColor" Value="White" />
+                <Setter Property="TextColor" Value="#283044" />
+                <Setter Property="BorderColor" Value="#E2E7FF" />
                 <Setter Property="BorderWidth" Value="1" />
             </Style>
 
             <Style x:Key="TouchEntryStyle" TargetType="Entry">
                 <Setter Property="MinimumHeightRequest" Value="54" />
                 <Setter Property="FontSize" Value="20" />
-                <Setter Property="BackgroundColor" Value="#F7F8FA" />
+                <Setter Property="BackgroundColor" Value="White" />
                 <Setter Property="TextColor" Value="#222222" />
                 <Setter Property="PlaceholderColor" Value="#9A9A9A" />
                 <Setter Property="Margin" Value="0" />

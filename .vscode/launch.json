@@ -1,0 +1,11 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "C#: HeladeriaPOS.Maui",
+      "type": "dotnet",
+      "request": "launch",
+      "projectPath": "${workspaceFolder}/HeladeriaPOS.Maui.csproj"
+    }
+  ]
+}

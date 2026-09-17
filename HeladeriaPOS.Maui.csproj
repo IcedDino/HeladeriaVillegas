@@ -30,6 +30,7 @@
 
   <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0-maccatalyst'">
     <SupportedOSPlatformVersion>13.1</SupportedOSPlatformVersion>
+    <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
 
   <ItemGroup>

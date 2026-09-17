@@ -1,0 +1,49 @@
+{
+  "version": "2.0.0",
+  "options": {
+    "env": {
+      "DEVELOPER_DIR": "/Applications/Xcode-beta.app/Contents/Developer"
+    }
+  },
+  "tasks": [
+    {
+      "label": "build",
+      "command": "dotnet",
+      "type": "process",
+      "args": [
+        "build",
+        "${workspaceFolder}/HeladeriaPOS.Maui.csproj",
+        "-f",
+        "net8.0-maccatalyst",
+        "-c",
+        "Debug"
+      ],
+      "problemMatcher": "$msCompile",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "Run RUN.sh",
+      "type": "shell",
+      "command": "./RUN.sh",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "dotnet watch (Hot Reload - Mac Catalyst)",
+      "type": "shell",
+      "command": "dotnet watch --project HeladeriaPOS.Maui.csproj -f net8.0-maccatalyst -lp MacCatalyst",
+      "problemMatcher": "$msCompile",
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    }
+  ]
+}

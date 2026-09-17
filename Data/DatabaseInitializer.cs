@@ -94,19 +94,19 @@ public sealed class DatabaseInitializer
 
     private static Product[] CreateSeedProducts() =>
     [
-        new() { Name = "Papas / Sabritas", Category = ProductCategory.Snacks, ProductType = ProductType.PapasSabritas, BasePrice = 35m, Tag = "Snack", ImagePath = "papas_sabritas.png" },
-        new() { Name = "Frituras", Category = ProductCategory.Snacks, ProductType = ProductType.Fritura, BasePrice = 15m, Tag = "Salsa incluida", ImagePath = "frituras.png" },
-        new() { Name = "Sopa instantánea", Category = ProductCategory.Snacks, ProductType = ProductType.SopaPalomitas, BasePrice = 30m, Tag = "Caliente", ImagePath = "sopa_instantanea.png" },
-        new() { Name = "Palomitas", Category = ProductCategory.Snacks, ProductType = ProductType.SopaPalomitas, BasePrice = 30m, Tag = "Snack", ImagePath = "palomitas.png" },
+        new() { Name = "Papas / Sabritas", Category = ProductCategory.Snacks, ProductType = ProductType.PapasSabritas, BasePrice = 35m, Tag = "Snack", ImagePath = "placeholder.png" },
+        new() { Name = "Frituras", Category = ProductCategory.Snacks, ProductType = ProductType.Fritura, BasePrice = 15m, Tag = "Salsa incluida", ImagePath = "placeholder.png" },
+        new() { Name = "Sopa instantánea", Category = ProductCategory.Snacks, ProductType = ProductType.SopaPalomitas, BasePrice = 30m, Tag = "Caliente", ImagePath = "placeholder.png" },
+        new() { Name = "Palomitas", Category = ProductCategory.Snacks, ProductType = ProductType.SopaPalomitas, BasePrice = 30m, Tag = "Snack", ImagePath = "placeholder.png" },
 
-        new() { Name = "Barquillo", Category = ProductCategory.Helados, ProductType = ProductType.Barquillo, BasePrice = 25m, Tag = "Helado", ImagePath = "barquillo.png" },
-        new() { Name = "Vaso", Category = ProductCategory.Helados, ProductType = ProductType.Vaso, BasePrice = 25m, Tag = "Helado", ImagePath = "vaso_helado.png" },
-        new() { Name = "Canasta", Category = ProductCategory.Helados, ProductType = ProductType.Canasta, BasePrice = 45m, Tag = "Gourmet", ImagePath = "canasta.png" },
-        new() { Name = "Envase / Bote", Category = ProductCategory.Helados, ProductType = ProductType.Envase, BasePrice = 65m, Tag = "Para llevar", ImagePath = "envase_bote.png" },
+        new() { Name = "Barquillo", Category = ProductCategory.Helados, ProductType = ProductType.Barquillo, BasePrice = 25m, Tag = "Helado", ImagePath = "placeholder.png" },
+        new() { Name = "Vaso", Category = ProductCategory.Helados, ProductType = ProductType.Vaso, BasePrice = 25m, Tag = "Helado", ImagePath = "placeholder.png" },
+        new() { Name = "Canasta", Category = ProductCategory.Helados, ProductType = ProductType.Canasta, BasePrice = 45m, Tag = "Gourmet", ImagePath = "placeholder.png" },
+        new() { Name = "Envase / Bote", Category = ProductCategory.Helados, ProductType = ProductType.Envase, BasePrice = 65m, Tag = "Para llevar", ImagePath = "placeholder.png" },
 
-        new() { Name = "Malteada", Category = ProductCategory.Especialidades, ProductType = ProductType.Malteada, BasePrice = 40m, Tag = "Especialidad", ImagePath = "malteada.png" },
-        new() { Name = "Copa", Category = ProductCategory.Especialidades, ProductType = ProductType.Copa, BasePrice = 70m, Tag = "Especialidad", ImagePath = "copa.png" },
-        new() { Name = "Banana Split", Category = ProductCategory.Especialidades, ProductType = ProductType.BananaSplit, BasePrice = 70m, Tag = "Especialidad", ImagePath = "banana_split.png" },
-        new() { Name = "Tres Marías", Category = ProductCategory.Especialidades, ProductType = ProductType.TresMarias, BasePrice = 70m, Tag = "Especialidad", ImagePath = "tres_marias.png" }
+        new() { Name = "Malteada", Category = ProductCategory.Especialidades, ProductType = ProductType.Malteada, BasePrice = 40m, Tag = "Especialidad", ImagePath = "placeholder.png" },
+        new() { Name = "Copa", Category = ProductCategory.Especialidades, ProductType = ProductType.Copa, BasePrice = 70m, Tag = "Especialidad", ImagePath = "placeholder.png" },
+        new() { Name = "Banana Split", Category = ProductCategory.Especialidades, ProductType = ProductType.BananaSplit, BasePrice = 70m, Tag = "Especialidad", ImagePath = "placeholder.png" },
+        new() { Name = "Tres Marías", Category = ProductCategory.Especialidades, ProductType = ProductType.TresMarias, BasePrice = 70m, Tag = "Especialidad", ImagePath = "placeholder.png" }
     ];
 }

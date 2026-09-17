@@ -4,17 +4,17 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     Title="Configurar producto"
-    BackgroundColor="#F8F9FA">
+    BackgroundColor="#FAF8FF">
 
     <Grid RowDefinitions="*,Auto" Padding="22">
         <ScrollView Grid.Row="0">
             <VerticalStackLayout Spacing="18" MaximumWidthRequest="720" HorizontalOptions="Center">
-                <Border BackgroundColor="#FFF4F4" Stroke="#F1D0D0" StrokeThickness="1" Padding="16">
+                <Border BackgroundColor="#F2F3FF" Stroke="#E2E7FF" StrokeThickness="1" Padding="16">
                     <Border.StrokeShape>
                         <RoundRectangle CornerRadius="14" />
                     </Border.StrokeShape>
                     <VerticalStackLayout Spacing="5">
-                        <Label x:Name="ProductNameText" FontSize="26" FontAttributes="Bold" TextColor="#9F1E1E" />
+                        <Label x:Name="ProductNameText" FontSize="26" FontAttributes="Bold" TextColor="#B80035" />
                         <Label x:Name="BaseHintText" FontSize="15" TextColor="#666666" LineBreakMode="WordWrap" />
                     </VerticalStackLayout>
                 </Border>
@@ -45,7 +45,7 @@
                             <Label Text="$10 por unidad" FontSize="13" TextColor="#777777" />
                         </VerticalStackLayout>
                         <Button Grid.Column="1" Text="−" Style="{StaticResource QuantityButtonStyle}" Clicked="SnackExtra_Clicked" />
-                        <Border Grid.Column="2" BackgroundColor="#F2F4F6" Stroke="#D8DDE2" StrokeThickness="1" MinimumWidthRequest="58" HeightRequest="52">
+                        <Border Grid.Column="2" BackgroundColor="#F2F3FF" Stroke="#E2E7FF" StrokeThickness="1" MinimumWidthRequest="58" HeightRequest="52">
                             <Border.StrokeShape><RoundRectangle CornerRadius="12" /></Border.StrokeShape>
                             <Label x:Name="SnackExtraValue" Text="0" FontSize="20" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
                         </Border>
@@ -79,7 +79,7 @@
                             <Label Text="$20 por bola" FontSize="13" TextColor="#777777" />
                         </VerticalStackLayout>
                         <Button Grid.Column="1" Text="−" Style="{StaticResource QuantityButtonStyle}" Clicked="ExtraScoops_Clicked" />
-                        <Border Grid.Column="2" BackgroundColor="#F2F4F6" Stroke="#D8DDE2" StrokeThickness="1" MinimumWidthRequest="58" HeightRequest="52">
+                        <Border Grid.Column="2" BackgroundColor="#F2F3FF" Stroke="#E2E7FF" StrokeThickness="1" MinimumWidthRequest="58" HeightRequest="52">
                             <Border.StrokeShape><RoundRectangle CornerRadius="12" /></Border.StrokeShape>
                             <Label x:Name="ExtraScoopsValue" Text="0" FontSize="20" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
                         </Border>
@@ -100,7 +100,7 @@
                             <Label Text="$10 por ingrediente (½ L y 1 L)" FontSize="13" TextColor="#777777" />
                         </VerticalStackLayout>
                         <Button Grid.Column="1" Text="−" Style="{StaticResource QuantityButtonStyle}" Clicked="ContainerIngredient_Clicked" />
-                        <Border Grid.Column="2" BackgroundColor="#F2F4F6" Stroke="#D8DDE2" StrokeThickness="1" MinimumWidthRequest="58" HeightRequest="52">
+                        <Border Grid.Column="2" BackgroundColor="#F2F3FF" Stroke="#E2E7FF" StrokeThickness="1" MinimumWidthRequest="58" HeightRequest="52">
                             <Border.StrokeShape><RoundRectangle CornerRadius="12" /></Border.StrokeShape>
                             <Label x:Name="ContainerIngredientValue" Text="0" FontSize="20" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
                         </Border>
@@ -120,7 +120,7 @@
                             <Label Text="$5 por unidad" FontSize="13" TextColor="#777777" />
                         </VerticalStackLayout>
                         <Button Grid.Column="1" Text="−" Style="{StaticResource QuantityButtonStyle}" Clicked="OtherIngredient_Clicked" />
-                        <Border Grid.Column="2" BackgroundColor="#F2F4F6" Stroke="#D8DDE2" StrokeThickness="1" MinimumWidthRequest="58" HeightRequest="52">
+                        <Border Grid.Column="2" BackgroundColor="#F2F3FF" Stroke="#E2E7FF" StrokeThickness="1" MinimumWidthRequest="58" HeightRequest="52">
                             <Border.StrokeShape><RoundRectangle CornerRadius="12" /></Border.StrokeShape>
                             <Label x:Name="OtherIngredientValue" Text="0" FontSize="20" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
                         </Border>

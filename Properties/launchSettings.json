@@ -3,6 +3,10 @@
     "Windows Machine": {
       "commandName": "MsixPackage",
       "nativeDebugging": false
+    },
+    "MacCatalyst": {
+      "commandName": "Project",
+      "nativeDebugging": false
     }
   }
 }

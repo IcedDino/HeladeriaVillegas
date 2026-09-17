@@ -29,4 +29,6 @@ case "$(uname -m)" in
 esac
 
 dotnet build HeladeriaPOS.Maui.csproj -f net8.0-maccatalyst -c Debug -p:RuntimeIdentifier="$runtime"
-open "bin/Debug/net8.0-maccatalyst/$runtime/HeladeriaPOS.Maui.app"
+pkill -f "HeladeriaPOS.Maui.app" 2>/dev/null || true
+open -n "bin/Debug/net8.0-maccatalyst/$runtime/HeladeriaPOS.Maui.app"
+
