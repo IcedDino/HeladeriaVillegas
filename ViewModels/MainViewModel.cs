@@ -22,6 +22,9 @@ public partial class MainViewModel : ObservableObject
     public ObservableCollection<OrderItemViewModel> Cart { get; } = [];
 
     [ObservableProperty]
+    private double productCardHeight = 240;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsSnacksSelected))]
     [NotifyPropertyChangedFor(nameof(IsHeladosSelected))]
     [NotifyPropertyChangedFor(nameof(IsEspecialidadesSelected))]

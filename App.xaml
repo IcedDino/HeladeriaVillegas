@@ -28,12 +28,12 @@
 
             <Style x:Key="CategoryButtonStyle" TargetType="Button" BasedOn="{StaticResource TouchButtonStyle}">
                 <Setter Property="MinimumWidthRequest" Value="140" />
-                <Setter Property="MinimumHeightRequest" Value="52" />
-                <Setter Property="BackgroundColor" Value="White" />
-                <Setter Property="TextColor" Value="#343434" />
-                <Setter Property="BorderColor" Value="{StaticResource SoftBorder}" />
+                <Setter Property="MinimumHeightRequest" Value="68" />
+                <Setter Property="BackgroundColor" Value="{StaticResource BrandRed}" />
+                <Setter Property="TextColor" Value="White" />
+                <Setter Property="BorderColor" Value="{StaticResource BrandDarkRed}" />
                 <Setter Property="BorderWidth" Value="1" />
-                <Setter Property="FontSize" Value="15" />
+                <Setter Property="FontSize" Value="17" />
             </Style>
 
             <Style x:Key="QuantityButtonStyle" TargetType="Button">
