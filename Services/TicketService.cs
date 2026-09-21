@@ -32,4 +32,19 @@ public sealed class TicketService
         await db.SaveChangesAsync();
         await transaction.CommitAsync();
     }
+
+    public async Task<Product> AddProductAsync(Product product)
+    {
+        await using var db = await _factory.CreateDbContextAsync();
+        db.Products.Add(product);
+        await db.SaveChangesAsync();
+        return product;
+    }
+
+    public async Task UpdateProductsAsync(IEnumerable<Product> products)
+    {
+        await using var db = await _factory.CreateDbContextAsync();
+        db.Products.UpdateRange(products);
+        await db.SaveChangesAsync();
+    }
 }

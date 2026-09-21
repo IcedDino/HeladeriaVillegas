@@ -2,6 +2,7 @@ using HeladeriaPOS.Data;
 using HeladeriaPOS.Services;
 using HeladeriaPOS.ViewModels;
 using HeladeriaPOS.Views;
+using CommunityToolkit.Maui;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -15,6 +16,7 @@ public static class MauiProgram
 
         builder
             .UseMauiApp<App>()
+            .UseMauiCommunityToolkit()
             .ConfigureFonts(fonts =>
             {
                 // Segoe UI se usa de forma nativa en Windows; no se incrustan fuentes adicionales.
@@ -30,6 +32,16 @@ public static class MauiProgram
         builder.Services.AddSingleton<DatabaseInitializer>();
         builder.Services.AddSingleton<PricingService>();
         builder.Services.AddSingleton<TicketService>();
+        builder.Services.AddSingleton(new HttpClient
+        {
+            BaseAddress = new Uri("https://api.openverse.org/"),
+            Timeout = TimeSpan.FromSeconds(12),
+            DefaultRequestHeaders =
+            {
+                UserAgent = { new System.Net.Http.Headers.ProductInfoHeaderValue("HeladeriaPOS", "1.0") }
+            }
+        });
+        builder.Services.AddSingleton<OpenverseService>();
         builder.Services.AddSingleton<IProductDialogService, ProductDialogService>();
 
         builder.Services.AddSingleton<MainViewModel>();

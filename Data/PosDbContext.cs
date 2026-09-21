@@ -27,7 +27,13 @@ public sealed class PosDbContext : DbContext
             entity.Property(x => x.Name).HasMaxLength(120).IsRequired();
             entity.Property(x => x.Tag).HasMaxLength(50);
             entity.Property(x => x.ImagePath).HasMaxLength(260);
+            entity.Property(x => x.ImageCreator).HasMaxLength(300);
+            entity.Property(x => x.ImageLicense).HasMaxLength(80);
+            entity.Property(x => x.ImageLicenseUrl).HasMaxLength(2000);
+            entity.Property(x => x.ImageSourceUrl).HasMaxLength(2000);
+            entity.Property(x => x.ExtraName).HasMaxLength(80);
             entity.Property(x => x.BasePrice).HasConversion(moneyConverter);
+            entity.Property(x => x.ExtraPrice).HasConversion(moneyConverter);
             entity.HasIndex(x => new { x.Category, x.IsActive });
         });
 

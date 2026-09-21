@@ -127,6 +127,22 @@
                         <Button Grid.Column="3" Text="+" Style="{StaticResource QuantityButtonStyle}" Clicked="OtherIngredient_Clicked" />
                     </Grid>
                 </VerticalStackLayout>
+
+                <VerticalStackLayout x:Name="CustomExtrasSection" IsVisible="False" Spacing="10">
+                    <Label Text="Extras opcionales" FontSize="20" FontAttributes="Bold" />
+                    <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
+                        <VerticalStackLayout VerticalOptions="Center">
+                            <Label x:Name="CustomExtraNameText" Text="Extra" FontSize="17" FontAttributes="Bold" />
+                            <Label x:Name="CustomExtraPriceText" FontSize="13" TextColor="#777777" />
+                        </VerticalStackLayout>
+                        <Button Grid.Column="1" Text="−" Style="{StaticResource QuantityButtonStyle}" Clicked="CustomExtra_Clicked" />
+                        <Border Grid.Column="2" BackgroundColor="#F2F3FF" Stroke="#E2E7FF" StrokeThickness="1" MinimumWidthRequest="58" HeightRequest="52">
+                            <Border.StrokeShape><RoundRectangle CornerRadius="12" /></Border.StrokeShape>
+                            <Label x:Name="CustomExtraValue" Text="0" FontSize="20" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                        </Border>
+                        <Button Grid.Column="3" Text="+" Style="{StaticResource QuantityButtonStyle}" Clicked="CustomExtra_Clicked" />
+                    </Grid>
+                </VerticalStackLayout>
             </VerticalStackLayout>
         </ScrollView>
 

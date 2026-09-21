@@ -17,6 +17,8 @@ public sealed class DatabaseInitializer
         await using var db = await _factory.CreateDbContextAsync();
         await db.Database.EnsureCreatedAsync();
 
+        await EnsureProductColumnsAsync(db);
+
         await db.Database.OpenConnectionAsync();
         try
         {
@@ -68,7 +70,7 @@ public sealed class DatabaseInitializer
                 changed = true;
             }
 
-            if (existing.ImagePath != seed.ImagePath)
+            if (string.IsNullOrWhiteSpace(existing.ImagePath))
             {
                 existing.ImagePath = seed.ImagePath;
                 changed = true;
@@ -90,6 +92,48 @@ public sealed class DatabaseInitializer
         await using var command = db.Database.GetDbConnection().CreateCommand();
         command.CommandText = sql;
         await command.ExecuteNonQueryAsync();
+    }
+
+    private static async Task EnsureProductColumnsAsync(PosDbContext db)
+    {
+        await db.Database.OpenConnectionAsync();
+        try
+        {
+            var existingColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            await using (var command = db.Database.GetDbConnection().CreateCommand())
+            {
+                command.CommandText = "PRAGMA table_info('Products');";
+                await using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                    existingColumns.Add(reader.GetString(1));
+            }
+
+            string[] migrations =
+            [
+                "AllowsExtras INTEGER NOT NULL DEFAULT 0",
+                "ExtraName TEXT NULL",
+                "ExtraPrice INTEGER NOT NULL DEFAULT 0",
+                "ImageCreator TEXT NULL",
+                "ImageLicense TEXT NULL",
+                "ImageLicenseUrl TEXT NULL",
+                "ImageSourceUrl TEXT NULL"
+            ];
+
+            foreach (string migration in migrations)
+            {
+                string columnName = migration.Split(' ', 2)[0];
+                if (existingColumns.Contains(columnName))
+                    continue;
+
+                await using var command = db.Database.GetDbConnection().CreateCommand();
+                command.CommandText = $"ALTER TABLE Products ADD COLUMN {migration};";
+                await command.ExecuteNonQueryAsync();
+            }
+        }
+        finally
+        {
+            await db.Database.CloseConnectionAsync();
+        }
     }
 
     private static Product[] CreateSeedProducts() =>

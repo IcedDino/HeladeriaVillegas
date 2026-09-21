@@ -1,4 +1,5 @@
 using HeladeriaPOS.Models;
+using System.Globalization;
 
 namespace HeladeriaPOS.Views;
 
@@ -26,6 +27,7 @@ public partial class ProductConfiguratorPage : ContentPage
         ProductNameText.Text = _product.Name;
         BaseHintText.Text = _product.ProductType switch
         {
+            ProductType.Custom => $"Precio base {_product.BasePrice.ToString("C", CultureInfo.GetCultureInfo("es-MX"))}.",
             ProductType.PapasSabritas => "Elige Normal ($35), preparado completo ($65) o preparado sin algún ingrediente ($60).",
             ProductType.Fritura => "Precio $15. La salsa está incluida por defecto.",
             ProductType.SopaPalomitas => "Precio normal $30; cocinada $35.",
@@ -37,7 +39,14 @@ public partial class ProductConfiguratorPage : ContentPage
         };
 
         bool isSnack = _product.Category == ProductCategory.Snacks;
-        SnackExtrasSection.IsVisible = isSnack;
+        SnackExtrasSection.IsVisible = isSnack && _product.ProductType != ProductType.Custom;
+
+        if (_product.ProductType == ProductType.Custom && _product.AllowsExtras)
+        {
+            CustomExtrasSection.IsVisible = true;
+            CustomExtraNameText.Text = string.IsNullOrWhiteSpace(_product.ExtraName) ? "Extra" : _product.ExtraName;
+            CustomExtraPriceText.Text = $"{_product.ExtraPrice.ToString("C", CultureInfo.GetCultureInfo("es-MX"))} por unidad";
+        }
 
         switch (_product.ProductType)
         {
@@ -160,6 +169,12 @@ public partial class ProductConfiguratorPage : ContentPage
     {
         _otherIngredientCount = ChangeCounter(_otherIngredientCount, sender, 30);
         OtherIngredientValue.Text = _otherIngredientCount.ToString();
+    }
+
+    private void CustomExtra_Clicked(object? sender, EventArgs e)
+    {
+        _otherIngredientCount = ChangeCounter(_otherIngredientCount, sender, 30);
+        CustomExtraValue.Text = _otherIngredientCount.ToString();
     }
 
     private static int ChangeCounter(int current, object? sender, int maximum)

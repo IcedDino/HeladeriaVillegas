@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net8.0-windows10.0.19041.0;net8.0-maccatalyst</TargetFrameworks>
+    <TargetFrameworks>net8.0-windows10.0.19041.0</TargetFrameworks>
     <!-- En macOS/Linux solo se compila el target Mac Catalyst -->
     <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('OSX')) Or $([MSBuild]::IsOSPlatform('Linux'))">net8.0-maccatalyst</TargetFrameworks>
     <OutputType Condition="'$(TargetFramework)' == 'net8.0-windows10.0.19041.0'">WinExe</OutputType>
@@ -41,6 +41,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+    <PackageReference Include="CommunityToolkit.Maui" Version="8.0.1" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.31" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.31">

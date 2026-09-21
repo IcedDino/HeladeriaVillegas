@@ -8,6 +8,7 @@ public sealed class PricingService
     {
         return product.ProductType switch
         {
+            ProductType.Custom => CalculateCustom(product, selection),
             ProductType.PapasSabritas => CalculatePapasSabritas(selection),
             ProductType.Fritura => CalculateFritura(selection),
             ProductType.SopaPalomitas => CalculateSopaPalomitas(selection),
@@ -16,6 +17,27 @@ public sealed class PricingService
             ProductType.Envase => CalculateEnvase(selection),
             ProductType.Malteada or ProductType.Copa or ProductType.BananaSplit or ProductType.TresMarias => CalculateSpecialty(product, selection),
             _ => throw new NotSupportedException($"Tipo no soportado: {product.ProductType}")
+        };
+    }
+
+    private static PricingResult CalculateCustom(Product product, ProductSelection selection)
+    {
+        var modifiers = new List<Modifier>();
+        if (product.AllowsExtras)
+        {
+            AddCounterModifier(
+                modifiers,
+                ModifierType.Other,
+                string.IsNullOrWhiteSpace(product.ExtraName) ? "Extra" : product.ExtraName,
+                product.ExtraPrice,
+                selection.OtherIngredientCount);
+        }
+
+        return new PricingResult
+        {
+            BasePrice = product.BasePrice,
+            VariantDescription = product.Name,
+            Modifiers = modifiers
         };
     }
 

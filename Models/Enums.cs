@@ -19,7 +19,8 @@ public enum ProductType
     Malteada,
     Copa,
     BananaSplit,
-    TresMarias
+    TresMarias,
+    Custom
 }
 
 public enum TicketStatus
