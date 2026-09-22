@@ -12,7 +12,7 @@
     <ContentPage.Resources>
         <Style x:Key="PanelStyle" TargetType="Border">
             <Setter Property="BackgroundColor" Value="White" />
-            <Setter Property="Stroke" Value="#E8E9F3" />
+            <Setter Property="Stroke" Value="{StaticResource SoftBorder}" />
             <Setter Property="StrokeThickness" Value="1" />
             <Setter Property="StrokeShape"><Setter.Value><RoundRectangle CornerRadius="18" /></Setter.Value></Setter>
         </Style>
@@ -27,8 +27,10 @@
             <Setter Property="CornerRadius" Value="10" />
             <Setter Property="FontSize" Value="20" />
             <Setter Property="FontAttributes" Value="Bold" />
-            <Setter Property="BackgroundColor" Value="#E2E7FF" />
-            <Setter Property="TextColor" Value="#283044" />
+            <Setter Property="BackgroundColor" Value="#FFF4F7" />
+            <Setter Property="TextColor" Value="{StaticResource BrandDarkRed}" />
+            <Setter Property="BorderColor" Value="#E9B8C8" />
+            <Setter Property="BorderWidth" Value="1" />
         </Style>
     </ContentPage.Resources>
 
@@ -39,17 +41,17 @@
                 
                 <!--Categories -->
                 <Grid x:Name='Categories' ColumnDefinitions="*,*,*" ColumnSpacing="12" HorizontalOptions="Fill" VerticalOptions="Fill">
-                    <Button Text="Helados" Grid.Column="0" HorizontalOptions="Fill" VerticalOptions="Fill" Style="{StaticResource CategoryButtonStyle}" Command="{Binding SelectCategoryCommand}" CommandParameter="Helados">
+                    <Button Text="🍦  Helados" Grid.Column="0" HorizontalOptions="Fill" VerticalOptions="Fill" Style="{StaticResource CategoryButtonStyle}" Command="{Binding SelectCategoryCommand}" CommandParameter="Helados">
                             <Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding IsHeladosSelected}" Value="True">
                                 <Setter Property="BackgroundColor" Value="{StaticResource BrandDarkRed}" /><Setter Property="TextColor" Value="White" />
                             </DataTrigger></Button.Triggers>
                     </Button>
-                    <Button Text="Snacks" Grid.Column="1" HorizontalOptions="Fill" VerticalOptions="Fill" Style="{StaticResource CategoryButtonStyle}" Command="{Binding SelectCategoryCommand}" CommandParameter="Snacks">
+                    <Button Text="🥨  Snacks" Grid.Column="1" HorizontalOptions="Fill" VerticalOptions="Fill" Style="{StaticResource CategoryButtonStyle}" Command="{Binding SelectCategoryCommand}" CommandParameter="Snacks">
                             <Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding IsSnacksSelected}" Value="True">
                                 <Setter Property="BackgroundColor" Value="{StaticResource BrandDarkRed}" /><Setter Property="TextColor" Value="White" />
                             </DataTrigger></Button.Triggers>
                     </Button>
-                    <Button Text="Especialidades" Grid.Column="2" HorizontalOptions="Fill" VerticalOptions="Fill" Style="{StaticResource CategoryButtonStyle}" Command="{Binding SelectCategoryCommand}" CommandParameter="Especialidades">
+                    <Button Text="★  Especialidades" Grid.Column="2" HorizontalOptions="Fill" VerticalOptions="Fill" Style="{StaticResource CategoryButtonStyle}" Command="{Binding SelectCategoryCommand}" CommandParameter="Especialidades">
                             <Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding IsEspecialidadesSelected}" Value="True">
                                 <Setter Property="BackgroundColor" Value="{StaticResource BrandDarkRed}" /><Setter Property="TextColor" Value="White" />
                             </DataTrigger></Button.Triggers>
@@ -63,34 +65,35 @@
                         </CollectionView.ItemsLayout>
                         <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="vm:ProductCardViewModel">
-                            <Border x:Name="ProductCard" Style="{StaticResource PanelStyle}" Padding="12" Margin="1"
+                            <Border x:Name="ProductCard" Style="{StaticResource PanelStyle}" Padding="0" Margin="2"
+                                    Stroke="#EDD6DE" StrokeThickness="1"
                                     HeightRequest="{Binding BindingContext.ProductCardHeight, Source={RelativeSource AncestorType={x:Type ContentPage}}}">
+                                    <Border.Shadow>
+                                        <Shadow Brush="#220F0710" Offset="0,4" Radius="10" Opacity="0.5" />
+                                    </Border.Shadow>
                                     <Border.Behaviors>
                                         <toolkit:TouchBehavior PressedScale="0.97" PressedOpacity="0.88" />
                                     </Border.Behaviors>
                                     <Border.GestureRecognizers>
                                         <TapGestureRecognizer Command="{Binding SelectCommand}" />
                                     </Border.GestureRecognizers>
-                                    <Grid RowDefinitions="Auto,*,Auto" RowSpacing="8" InputTransparent="True">
-                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4">
-                                            <Border BackgroundColor="#DDF8EA" StrokeThickness="0" Padding="7,4" StrokeShape="RoundRectangle 6" HorizontalOptions="Start">
-                                                <Label Text="{Binding Tag}" FontSize="11" FontAttributes="Bold" TextColor="#005137" MaxLines="1" LineBreakMode="TailTruncation" />
-                                            </Border>
-                                            <Label Grid.Column="1" Text="{Binding BasePriceDisplay}" FontSize="19" FontAttributes="Bold" TextColor="{StaticResource BrandRed}" />
-                                        </Grid>
-
-                                        <Border Grid.Row="1" HorizontalOptions="Fill" VerticalOptions="Fill"
-                                                BackgroundColor="#F2F3FF" Stroke="#E8E9F3" StrokeThickness="1" StrokeShape="RoundRectangle 12">
+                                    <Grid RowDefinitions="*,Auto" InputTransparent="True">
+                                        <Border HorizontalOptions="Fill" VerticalOptions="Fill"
+                                                BackgroundColor="#F7EDF1" StrokeThickness="0" StrokeShape="RoundRectangle 17,17,0,0">
                                             <Grid>
                                                 <Image Source="{Binding ImagePath}" Aspect="AspectFill" />
-                                                <Border IsVisible="{Binding HasImageAttribution}" VerticalOptions="End" Margin="5" Padding="6,3"
-                                                        BackgroundColor="#B3000000" StrokeThickness="0" StrokeShape="RoundRectangle 5">
-                                                    <Label Text="{Binding ImageAttribution}" FontSize="8" TextColor="White" MaxLines="1" LineBreakMode="TailTruncation" />
+                                                <Border HorizontalOptions="End" VerticalOptions="Start" Margin="10" Padding="10,6"
+                                                        BackgroundColor="#E6FFFFFF" Stroke="#40FFFFFF" StrokeThickness="1" StrokeShape="RoundRectangle 10">
+                                                    <Label Text="{Binding BasePriceDisplay}" FontSize="19" FontAttributes="Bold" TextColor="{StaticResource BrandDarkRed}" />
                                                 </Border>
                                             </Grid>
                                         </Border>
-
-                                        <Label Grid.Row="2" Text="{Binding Name}" FontSize="16" FontAttributes="Bold" MaxLines="2" LineBreakMode="TailTruncation" VerticalOptions="Center" />
+                                        <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="8" Padding="12,10">
+                                            <Label Text="{Binding Name}" FontSize="17" FontAttributes="Bold" MaxLines="2" LineBreakMode="TailTruncation" VerticalOptions="Center" />
+                                            <Border Grid.Column="1" BackgroundColor="#E5F6EF" StrokeThickness="0" Padding="8,5" StrokeShape="RoundRectangle 8" VerticalOptions="Center">
+                                                <Label Text="{Binding Tag}" FontSize="10" FontAttributes="Bold" TextColor="#0B624A" MaxLines="1" LineBreakMode="TailTruncation" />
+                                            </Border>
+                                        </Grid>
                                     </Grid>
                                 </Border>
                             </DataTemplate>
@@ -231,7 +234,7 @@
             </Grid>
         </Border>
 
-        <Grid x:Name="NumericKeypadOverlay" Grid.ColumnSpan="2" ZIndex="100" IsVisible="False" BackgroundColor="#80000000">
+        <Grid x:Name="NumericKeypadOverlay" Grid.ColumnSpan="2" ZIndex="200" IsVisible="False" BackgroundColor="#80000000">
             <Grid.GestureRecognizers>
                 <TapGestureRecognizer Tapped="OnKeypadBackdropTapped" />
             </Grid.GestureRecognizers>
@@ -242,7 +245,7 @@
                     <TapGestureRecognizer Tapped="OnKeypadPanelTapped" />
                 </Border.GestureRecognizers>
                 <VerticalStackLayout Spacing="14">
-                    <Label Text="EFECTIVO RECIBIDO" FontSize="13" CharacterSpacing="1" FontAttributes="Bold" TextColor="#5C6477" />
+                    <Label x:Name="KeypadTitle" Text="EFECTIVO RECIBIDO" FontSize="13" CharacterSpacing="1" FontAttributes="Bold" TextColor="#5C6477" />
                     <Label Text="{Binding ReceivedCashInput, StringFormat='${0}'}" FontSize="38" FontAttributes="Bold"
                            HorizontalTextAlignment="End" TextColor="{StaticResource BrandRed}" />
 
@@ -273,89 +276,120 @@
         </Grid>
 
         <Grid x:Name="AddProductOverlay" Grid.ColumnSpan="2" ZIndex="110" IsVisible="False" BackgroundColor="#80000000">
-            <Border WidthRequest="540" MaximumHeightRequest="760" Padding="24" BackgroundColor="White" Stroke="#E8E9F3"
-                    StrokeThickness="1" StrokeShape="RoundRectangle 20" HorizontalOptions="Center" VerticalOptions="Center">
-                <Grid RowDefinitions="Auto,*,Auto" RowSpacing="16">
+            <Border Margin="12" MaximumWidthRequest="1060" MaximumHeightRequest="700" HorizontalOptions="Fill" VerticalOptions="Fill"
+                    BackgroundColor="White" Stroke="#E8E9F3" StrokeThickness="1">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="18" />
+                </Border.StrokeShape>
+                <Grid Padding="26" RowDefinitions="Auto,*,Auto" RowSpacing="20">
                     <Grid ColumnDefinitions="*,Auto">
                         <VerticalStackLayout Spacing="2">
-                            <Label Text="Agregar producto" FontSize="27" FontAttributes="Bold" TextColor="{StaticResource BrandRed}" />
-                            <Label Text="El producto se guardará en el catálogo" FontSize="13" TextColor="{StaticResource TextSecondary}" />
+                            <Label Text="Agregar producto" FontSize="30" FontAttributes="Bold" TextColor="{StaticResource BrandRed}" />
+                            <Label Text="Completa los datos y elige una foto" FontSize="15" TextColor="{StaticResource TextSecondary}" />
                         </VerticalStackLayout>
-                        <Button Grid.Column="1" Text="×" Clicked="OnCancelAddProductClicked" WidthRequest="48" HeightRequest="48"
-                                CornerRadius="24" Padding="0" FontSize="25" BackgroundColor="#F2F3FF" TextColor="#283044" />
+                        <Button Grid.Column="1" Text="×" Clicked="OnCancelAddProductClicked" WidthRequest="56" HeightRequest="56"
+                                CornerRadius="28" Padding="0" FontSize="28" BackgroundColor="#FFF0F3" TextColor="{StaticResource BrandDarkRed}"
+                                SemanticProperties.Description="Cerrar formulario" />
                     </Grid>
 
                     <ScrollView Grid.Row="1">
-                        <VerticalStackLayout Spacing="13">
-                            <Label Text="Categoría" FontSize="14" FontAttributes="Bold" />
-                            <Picker x:Name="NewProductCategory" Title="Selecciona una categoría" SelectedIndex="0" HeightRequest="54">
-                                <Picker.Items>
-                                    <x:String>Helados</x:String>
-                                    <x:String>Snacks</x:String>
-                                    <x:String>Especialidades</x:String>
-                                </Picker.Items>
-                            </Picker>
+                        <Grid ColumnDefinitions="1.08*,0.92*" ColumnSpacing="26">
+                            <VerticalStackLayout Spacing="9">
+                                <Label Text="DATOS PRINCIPALES" FontSize="12" CharacterSpacing="1.2" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                                <Label Text="Categoría" FontSize="16" FontAttributes="Bold" />
+                                <Picker x:Name="NewProductCategory" Title="Selecciona una categoría" SelectedIndex="0" HeightRequest="56"
+                                        BackgroundColor="#FFF9FB">
+                                    <Picker.Items>
+                                        <x:String>Helados</x:String>
+                                        <x:String>Snacks</x:String>
+                                        <x:String>Especialidades</x:String>
+                                    </Picker.Items>
+                                </Picker>
 
-                            <Label Text="Nombre" FontSize="14" FontAttributes="Bold" />
-                            <Entry x:Name="NewProductName" Placeholder="Ej. Sundae de fresa" Style="{StaticResource TouchEntryStyle}" MaxLength="120" />
+                                <Label Text="Nombre" FontSize="16" FontAttributes="Bold" />
+                                <Entry x:Name="NewProductName" Placeholder="Ej. Sundae de fresa" Style="{StaticResource TouchEntryStyle}"
+                                       MinimumHeightRequest="56" FontSize="19" MaxLength="120" />
 
-                            <Label Text="Foto del producto" FontSize="14" FontAttributes="Bold" />
-                            <Border BackgroundColor="#F7F5FC" Stroke="#E2E7FF" StrokeThickness="1" StrokeShape="RoundRectangle 14" Padding="10">
-                                <Grid ColumnDefinitions="110,*" ColumnSpacing="12">
-                                    <Border WidthRequest="110" HeightRequest="86" BackgroundColor="#ECEEF8" StrokeThickness="0" StrokeShape="RoundRectangle 10">
-                                        <Image x:Name="NewProductImagePreview" Source="placeholder.png" Aspect="AspectFill" />
-                                    </Border>
-                                    <VerticalStackLayout Grid.Column="1" Spacing="7" VerticalOptions="Center">
-                                        <Button Text="Buscar en Openverse" Clicked="OnOpenversePickerClicked" HeightRequest="48" CornerRadius="12"
-                                                BackgroundColor="#FFF0F3" TextColor="{StaticResource BrandRed}" BorderColor="#FFC2D0" BorderWidth="1"
-                                                FontAttributes="Bold" />
-                                        <Label x:Name="NewProductImageAttribution" Text="Sin imagen seleccionada" FontSize="11"
-                                               TextColor="{StaticResource TextSecondary}" MaxLines="2" LineBreakMode="TailTruncation" />
-                                    </VerticalStackLayout>
+                                <Label Text="Foto del producto" FontSize="16" FontAttributes="Bold" />
+                                <Border HeightRequest="175" BackgroundColor="#F7EDF1" Stroke="#E7C6D2" StrokeThickness="1" StrokeShape="RoundRectangle 16">
+                                    <Image x:Name="NewProductImagePreview" Source="placeholder.png" Aspect="AspectFill" />
+                                </Border>
+                                <Button Text="Elegir de la biblioteca" Clicked="OnOpenversePickerClicked" HeightRequest="56" CornerRadius="14"
+                                        BackgroundColor="#FFF0F3" TextColor="{StaticResource BrandRed}" BorderColor="#EBA8BD" BorderWidth="2"
+                                        FontAttributes="Bold" FontSize="16" />
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                                    <Button Text="Tomar foto" Clicked="OnTakeProductPhotoClicked" HeightRequest="54" CornerRadius="13"
+                                            BackgroundColor="#FFF9FB" TextColor="#512334" BorderColor="#E7C6D2" BorderWidth="1"
+                                            FontAttributes="Bold" FontSize="15" />
+                                    <Button Grid.Column="1" Text="Elegir archivo" Clicked="OnChooseProductPhotoClicked" HeightRequest="54" CornerRadius="13"
+                                            BackgroundColor="#FFF9FB" TextColor="#512334" BorderColor="#E7C6D2" BorderWidth="1"
+                                            FontAttributes="Bold" FontSize="15" />
                                 </Grid>
-                            </Border>
+                                <Label x:Name="NewProductImageAttribution" Text="Ninguna foto seleccionada" FontSize="13"
+                                       TextColor="{StaticResource TextSecondary}" MaxLines="1" LineBreakMode="TailTruncation" />
+                            </VerticalStackLayout>
 
-                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                                <VerticalStackLayout Spacing="6">
-                                    <Label Text="Precio base" FontSize="14" FontAttributes="Bold" />
-                                    <Entry x:Name="NewProductPrice" Placeholder="0.00" Keyboard="Numeric" Style="{StaticResource TouchEntryStyle}" />
+                            <VerticalStackLayout Grid.Column="1" Spacing="14">
+                                <Label Text="VENTA Y OPCIONES" FontSize="12" CharacterSpacing="1.2" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                                <VerticalStackLayout Spacing="7">
+                                    <Label Text="Precio base" FontSize="16" FontAttributes="Bold" />
+                                    <Border BackgroundColor="#FFF9FB" Stroke="#E7C6D2" StrokeThickness="1" StrokeShape="RoundRectangle 10" Padding="10,0">
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer Tapped="OnBasePriceTapped" />
+                                        </Border.GestureRecognizers>
+                                        <Entry x:Name="NewProductPrice" Placeholder="0.00" IsReadOnly="True" Style="{StaticResource TouchEntryStyle}"
+                                               MinimumHeightRequest="56" FontSize="20" />
+                                    </Border>
                                 </VerticalStackLayout>
-                                <VerticalStackLayout Grid.Column="1" Spacing="6">
-                                    <Label Text="Etiqueta" FontSize="14" FontAttributes="Bold" />
-                                    <Entry x:Name="NewProductTag" Placeholder="Ej. Temporada" Style="{StaticResource TouchEntryStyle}" MaxLength="50" />
+                                <VerticalStackLayout Spacing="7">
+                                    <Label Text="Etiqueta" FontSize="16" FontAttributes="Bold" />
+                                    <Entry x:Name="NewProductTag" Placeholder="Ej. Temporada" Style="{StaticResource TouchEntryStyle}"
+                                           MinimumHeightRequest="56" FontSize="18" MaxLength="50" />
                                 </VerticalStackLayout>
-                            </Grid>
 
-                            <Grid ColumnDefinitions="*,Auto" Padding="0,6">
-                                <VerticalStackLayout Spacing="2">
-                                    <Label Text="¿Permite extras?" FontSize="17" FontAttributes="Bold" />
-                                    <Label Text="El cajero podrá indicar cuántos desea" FontSize="12" TextColor="{StaticResource TextSecondary}" />
-                                </VerticalStackLayout>
-                                <Switch x:Name="NewProductAllowsExtras" Grid.Column="1" Scale="1.25" VerticalOptions="Center"
-                                        Toggled="OnNewProductAllowsExtrasToggled" />
-                            </Grid>
+                                <Border BackgroundColor="#FFF6F8" Stroke="#E7C6D2" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="16">
+                                    <Grid ColumnDefinitions="*,Auto" MinimumHeightRequest="64">
+                                        <VerticalStackLayout Spacing="3" VerticalOptions="Center">
+                                            <Label Text="Permitir extras" FontSize="18" FontAttributes="Bold" />
+                                            <Label Text="El cajero podrá indicar cuántos desea" FontSize="13" TextColor="{StaticResource TextSecondary}" />
+                                        </VerticalStackLayout>
+                                        <Switch x:Name="NewProductAllowsExtras" Grid.Column="1" Scale="1.4" VerticalOptions="Center"
+                                                Toggled="OnNewProductAllowsExtrasToggled" />
+                                    </Grid>
+                                </Border>
 
-                            <Grid x:Name="NewProductExtrasFields" IsVisible="False" ColumnDefinitions="*,150" ColumnSpacing="12">
-                                <VerticalStackLayout Spacing="6">
-                                    <Label Text="Nombre del extra" FontSize="14" FontAttributes="Bold" />
-                                    <Entry x:Name="NewProductExtraName" Placeholder="Ej. Topping extra" Style="{StaticResource TouchEntryStyle}" MaxLength="80" />
+                                <VerticalStackLayout x:Name="NewProductExtrasFields" IsVisible="False" Spacing="12">
+                                    <VerticalStackLayout Spacing="7">
+                                        <Label Text="Nombre del extra" FontSize="16" FontAttributes="Bold" />
+                                        <Entry x:Name="NewProductExtraName" Placeholder="Ej. Topping extra" Style="{StaticResource TouchEntryStyle}"
+                                               MinimumHeightRequest="56" FontSize="18" MaxLength="80" />
+                                    </VerticalStackLayout>
+                                    <VerticalStackLayout Spacing="7">
+                                        <Label Text="Precio por extra" FontSize="16" FontAttributes="Bold" />
+                                        <Border BackgroundColor="#FFF9FB" Stroke="#E7C6D2" StrokeThickness="1" StrokeShape="RoundRectangle 10" Padding="10,0">
+                                            <Border.GestureRecognizers>
+                                                <TapGestureRecognizer Tapped="OnExtraPriceTapped" />
+                                            </Border.GestureRecognizers>
+                                            <Entry x:Name="NewProductExtraPrice" Placeholder="0.00" IsReadOnly="True" Style="{StaticResource TouchEntryStyle}"
+                                                   MinimumHeightRequest="56" FontSize="20" />
+                                        </Border>
+                                    </VerticalStackLayout>
                                 </VerticalStackLayout>
-                                <VerticalStackLayout Grid.Column="1" Spacing="6">
-                                    <Label Text="Precio por extra" FontSize="14" FontAttributes="Bold" />
-                                    <Entry x:Name="NewProductExtraPrice" Placeholder="0.00" Keyboard="Numeric" Style="{StaticResource TouchEntryStyle}" />
-                                </VerticalStackLayout>
-                            </Grid>
 
-                            <Label x:Name="AddProductErrorText" IsVisible="False" TextColor="#93000A" FontSize="13" LineBreakMode="WordWrap" />
-                        </VerticalStackLayout>
+                                <Border x:Name="AddProductErrorPanel" BackgroundColor="#FFF0EE" StrokeThickness="0"
+                                        StrokeShape="RoundRectangle 12" Padding="12" IsVisible="False">
+                                    <Label x:Name="AddProductErrorText" TextColor="#93000A" FontSize="14" LineBreakMode="WordWrap" />
+                                </Border>
+                            </VerticalStackLayout>
+                        </Grid>
                     </ScrollView>
 
-                    <Grid Grid.Row="2" ColumnDefinitions="*,*" ColumnSpacing="12">
-                        <Button Text="Cancelar" Clicked="OnCancelAddProductClicked" HeightRequest="58" CornerRadius="12"
-                                BackgroundColor="#EEEEEE" TextColor="#444444" FontSize="17" FontAttributes="Bold" />
+                    <Grid Grid.Row="2" ColumnDefinitions="*,*" ColumnSpacing="16">
+                        <Button Text="Cancelar" Clicked="OnCancelAddProductClicked" HeightRequest="64" CornerRadius="16"
+                                BackgroundColor="#F3ECEF" TextColor="#512334" FontSize="18" FontAttributes="Bold" />
                         <Button x:Name="SaveProductButton" Grid.Column="1" Text="Guardar producto" Clicked="OnSaveProductClicked"
-                                HeightRequest="58" CornerRadius="12" BackgroundColor="{StaticResource CheckoutGreen}"
-                                TextColor="White" FontSize="17" FontAttributes="Bold" />
+                                HeightRequest="64" CornerRadius="16" BackgroundColor="{StaticResource CheckoutGreen}"
+                                TextColor="White" FontSize="18" FontAttributes="Bold" />
                     </Grid>
                 </Grid>
             </Border>
@@ -367,8 +401,8 @@
                 <Grid RowDefinitions="Auto,Auto,*" RowSpacing="14">
                     <Grid ColumnDefinitions="*,Auto">
                         <VerticalStackLayout Spacing="2">
-                            <Label Text="Fotos de Openverse" FontSize="26" FontAttributes="Bold" TextColor="{StaticResource BrandRed}" />
-                            <Label Text="Resultados con licencia para uso comercial" FontSize="13" TextColor="{StaticResource TextSecondary}" />
+                            <Label Text="Biblioteca de productos" FontSize="26" FontAttributes="Bold" TextColor="{StaticResource BrandRed}" />
+                            <Label Text="Fotos guardadas localmente y disponibles sin internet" FontSize="13" TextColor="{StaticResource TextSecondary}" />
                         </VerticalStackLayout>
                         <Button Grid.Column="1" Text="×" Clicked="OnCloseOpenverseClicked" WidthRequest="48" HeightRequest="48"
                                 CornerRadius="24" Padding="0" FontSize="25" BackgroundColor="#F2F3FF" TextColor="#283044" />
@@ -376,13 +410,14 @@
 
                     <VerticalStackLayout Grid.Row="1" Spacing="10">
                         <HorizontalStackLayout Spacing="9">
+                            <Button Text="Todos" CommandParameter="Todos" Clicked="OnOpenverseCategoryClicked" Style="{StaticResource QuickCashButtonStyle}" />
                             <Button Text="Helados" CommandParameter="Helados" Clicked="OnOpenverseCategoryClicked" Style="{StaticResource QuickCashButtonStyle}" />
                             <Button Text="Snacks" CommandParameter="Snacks" Clicked="OnOpenverseCategoryClicked" Style="{StaticResource QuickCashButtonStyle}" />
                             <Button Text="Especialidades" CommandParameter="Especialidades" Clicked="OnOpenverseCategoryClicked" Style="{StaticResource QuickCashButtonStyle}" />
                         </HorizontalStackLayout>
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                            <Entry x:Name="OpenverseSearchEntry" Placeholder="Buscar una foto" Style="{StaticResource TouchEntryStyle}" ReturnType="Search" Completed="OnOpenverseSearchCompleted" />
-                            <Button Grid.Column="1" Text="Buscar" Clicked="OnOpenverseSearchClicked" WidthRequest="120" CornerRadius="12"
+                            <Entry x:Name="OpenverseSearchEntry" Placeholder="Si no está, busca una foto en internet" Style="{StaticResource TouchEntryStyle}" ReturnType="Search" Completed="OnOpenverseSearchCompleted" />
+                            <Button Grid.Column="1" Text="Buscar en internet" Clicked="OnOpenverseSearchClicked" WidthRequest="170" CornerRadius="12"
                                     BackgroundColor="{StaticResource BrandRed}" TextColor="White" FontAttributes="Bold" />
                         </Grid>
                     </VerticalStackLayout>
@@ -394,16 +429,15 @@
                             </CollectionView.ItemsLayout>
                             <CollectionView.ItemTemplate>
                                 <DataTemplate x:DataType="models:OpenverseImageResult">
-                                    <Border HeightRequest="210" Padding="8" BackgroundColor="#F7F5FC" Stroke="#E2E7FF" StrokeThickness="1" StrokeShape="RoundRectangle 14">
+                                    <Border HeightRequest="205" Padding="8" BackgroundColor="#FFF9FB" Stroke="#E7C6D2" StrokeThickness="1" StrokeShape="RoundRectangle 14">
                                         <Border.Behaviors>
                                             <toolkit:TouchBehavior PressedScale="0.96" PressedOpacity="0.85" />
                                         </Border.Behaviors>
-                                        <Grid RowDefinitions="*,Auto,Auto" RowSpacing="5">
-                                            <Border BackgroundColor="#ECEEF8" StrokeThickness="0" StrokeShape="RoundRectangle 9">
+                                        <Grid RowDefinitions="*,Auto" RowSpacing="6">
+                                            <Border BackgroundColor="#F7EDF1" StrokeThickness="0" StrokeShape="RoundRectangle 9">
                                                 <Image Source="{Binding Thumbnail}" Aspect="AspectFill" />
                                             </Border>
                                             <Label Grid.Row="1" Text="{Binding DisplayTitle}" FontSize="12" FontAttributes="Bold" MaxLines="1" LineBreakMode="TailTruncation" />
-                                            <Label Grid.Row="2" Text="{Binding AttributionSummary}" FontSize="10" TextColor="{StaticResource TextSecondary}" MaxLines="1" LineBreakMode="TailTruncation" />
                                         </Grid>
                                     </Border>
                                 </DataTemplate>

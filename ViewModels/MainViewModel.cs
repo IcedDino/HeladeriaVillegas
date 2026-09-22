@@ -15,7 +15,6 @@ public partial class MainViewModel : ObservableObject
     private readonly PricingService _pricingService;
     private readonly IProductDialogService _dialogService;
     private readonly TicketService _ticketService;
-    private readonly OpenverseService _openverseService;
     private bool _loaded;
 
     public ObservableCollection<ProductCardViewModel> Products { get; } = [];
@@ -91,14 +90,12 @@ public partial class MainViewModel : ObservableObject
         DatabaseInitializer databaseInitializer,
         PricingService pricingService,
         IProductDialogService dialogService,
-        TicketService ticketService,
-        OpenverseService openverseService)
+        TicketService ticketService)
     {
         _databaseInitializer = databaseInitializer;
         _pricingService = pricingService;
         _dialogService = dialogService;
         _ticketService = ticketService;
-        _openverseService = openverseService;
         CreateNewOrder();
     }
 
@@ -114,15 +111,6 @@ public partial class MainViewModel : ObservableObject
         {
             await _databaseInitializer.InitializeAsync();
             List<Product> products = await _ticketService.GetProductsAsync();
-
-            try
-            {
-                await AssignOpenverseImagesAsync(products);
-            }
-            catch
-            {
-                // La conexión de imágenes es opcional; el POS debe seguir funcionando sin internet.
-            }
 
             Products.Clear();
             for (int i = 0; i < products.Count; i++)
@@ -181,55 +169,6 @@ public partial class MainViewModel : ObservableObject
             FilteredProducts.Add(card);
 
         StatusMessage = $"Producto {product.Name} agregado";
-    }
-
-    private async Task AssignOpenverseImagesAsync(List<Product> products)
-    {
-        Product[] missing = products
-            .Where(product => string.IsNullOrWhiteSpace(product.ImagePath) || product.ImagePath == "placeholder.png")
-            .ToArray();
-
-        if (missing.Length == 0)
-            return;
-
-        var searches = missing
-            .Select(async product =>
-            {
-                string query = product.ProductType switch
-                {
-                    ProductType.PapasSabritas => "doritos",
-                    ProductType.Fritura => "pork rinds snack",
-                    ProductType.SopaPalomitas when product.Name.StartsWith("Sopa", StringComparison.OrdinalIgnoreCase) => "instant noodle soup",
-                    ProductType.SopaPalomitas => "popcorn bowl",
-                    ProductType.Barquillo => "ice cream cone",
-                    ProductType.Vaso => "ice cream in a plastic cup",
-                    ProductType.Canasta => "ice cream waffle bowl",
-                    ProductType.Envase => "ice cream pint",
-                    ProductType.Malteada => "milkshake",
-                    ProductType.Copa => "ice cream sundae glass",
-                    ProductType.BananaSplit => "banana split dessert",
-                    ProductType.TresMarias => "ice cream three scoops",
-                    _ => product.Name
-                };
-
-                IReadOnlyList<OpenverseImageResult> images = await _openverseService.SearchImagesAsync(query, 1);
-                if (images.Count > 0)
-                    ApplyImage(product, images[0]);
-            });
-
-        await Task.WhenAll(searches);
-        Product[] updated = missing.Where(product => product.ImagePath != "placeholder.png").ToArray();
-        if (updated.Length > 0)
-            await _ticketService.UpdateProductsAsync(updated);
-    }
-
-    private static void ApplyImage(Product product, OpenverseImageResult image)
-    {
-        product.ImagePath = image.Thumbnail;
-        product.ImageCreator = image.Creator;
-        product.ImageLicense = $"{image.License.ToUpperInvariant()} {image.LicenseVersion}".Trim();
-        product.ImageLicenseUrl = image.LicenseUrl;
-        product.ImageSourceUrl = image.SourceUrl;
     }
 
     [RelayCommand]

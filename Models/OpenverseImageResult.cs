@@ -33,6 +33,15 @@ public sealed class OpenverseImageResult
 
     [JsonIgnore]
     public string AttributionSummary => $"{(string.IsNullOrWhiteSpace(Creator) ? "Autor desconocido" : Creator)} · {License.ToUpperInvariant()} {LicenseVersion}".Trim();
+
+    [JsonIgnore]
+    public string? LibraryCategory { get; set; }
+
+    [JsonIgnore]
+    public string SearchKeywords { get; set; } = string.Empty;
+
+    [JsonIgnore]
+    public bool IsLocalLibraryImage => !string.IsNullOrWhiteSpace(LibraryCategory);
 }
 
 internal sealed class OpenverseSearchResponse

@@ -28,4 +28,34 @@ public sealed class OpenverseService
             .Where(image => !string.IsNullOrWhiteSpace(image.Thumbnail))
             .ToList() ?? [];
     }
+
+    public async Task<string> CacheImageAsync(
+        OpenverseImageResult image,
+        CancellationToken cancellationToken = default)
+    {
+        if (image.IsLocalLibraryImage || !Uri.TryCreate(image.Thumbnail, UriKind.Absolute, out Uri? imageUri))
+            return image.Thumbnail;
+
+        using HttpResponseMessage response = await _httpClient.GetAsync(imageUri, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        string extension = response.Content.Headers.ContentType?.MediaType switch
+        {
+            "image/png" => ".png",
+            "image/webp" => ".webp",
+            _ => ".jpg"
+        };
+
+        string directory = Path.Combine(FileSystem.AppDataDirectory, "ProductImages");
+        Directory.CreateDirectory(directory);
+        string safeId = new string(image.Id.Where(char.IsLetterOrDigit).Take(32).ToArray());
+        if (safeId.Length == 0)
+            safeId = Guid.NewGuid().ToString("N");
+
+        string localPath = Path.Combine(directory, $"product_{safeId}{extension}");
+        await using Stream input = await response.Content.ReadAsStreamAsync(cancellationToken);
+        await using FileStream output = File.Create(localPath);
+        await input.CopyToAsync(output, cancellationToken);
+        return localPath;
+    }
 }

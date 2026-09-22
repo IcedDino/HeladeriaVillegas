@@ -13,6 +13,15 @@ public partial class MainPage : ContentPage
     private OpenverseImageResult? _selectedOpenverseImage;
     private CancellationTokenSource? _openverseSearchCancellation;
     private bool _loaded;
+
+    private enum KeypadTarget
+    {
+        Cash,
+        BasePrice,
+        ExtraPrice
+    }
+
+    private KeypadTarget _keypadTarget = KeypadTarget.Cash;
     public MainPage(MainViewModel viewModel, IProductDialogService dialogService, OpenverseService openverseService)
     {
         InitializeComponent();
@@ -93,10 +102,44 @@ public partial class MainPage : ContentPage
 
     private void OnReceivedCashFocused(object? sender, FocusEventArgs e) => ShowNumericKeypad();
 
-    private void ShowNumericKeypad()
+    private void OnBasePriceTapped(object? sender, TappedEventArgs e) =>
+        ShowKeypad(KeypadTarget.BasePrice, "PRECIO BASE");
+
+    private void OnExtraPriceTapped(object? sender, TappedEventArgs e) =>
+        ShowKeypad(KeypadTarget.ExtraPrice, "PRECIO POR EXTRA");
+
+    private void ShowNumericKeypad() => ShowKeypad(KeypadTarget.Cash, "EFECTIVO RECIBIDO");
+
+    private void ShowKeypad(KeypadTarget target, string title)
     {
-        ReceivedCashEntry.Unfocus();
+        _keypadTarget = target;
+        KeypadTitle.Text = title;
+        if (target == KeypadTarget.Cash)
+            ReceivedCashEntry.Unfocus();
         NumericKeypadOverlay.IsVisible = true;
+    }
+
+    private string GetKeypadValue() => _keypadTarget switch
+    {
+        KeypadTarget.BasePrice => NewProductPrice.Text ?? string.Empty,
+        KeypadTarget.ExtraPrice => NewProductExtraPrice.Text ?? string.Empty,
+        _ => _viewModel.ReceivedCashInput ?? "0"
+    };
+
+    private void SetKeypadValue(string value)
+    {
+        switch (_keypadTarget)
+        {
+            case KeypadTarget.BasePrice:
+                NewProductPrice.Text = value;
+                break;
+            case KeypadTarget.ExtraPrice:
+                NewProductExtraPrice.Text = value;
+                break;
+            default:
+                _viewModel.ReceivedCashInput = value;
+                break;
+        }
     }
 
     private void OnKeypadNumberClicked(object? sender, EventArgs e)
@@ -104,25 +147,29 @@ public partial class MainPage : ContentPage
         if (sender is not Button { Text: var key } || string.IsNullOrEmpty(key))
             return;
 
-        string current = _viewModel.ReceivedCashInput ?? "0";
+        string current = GetKeypadValue();
+        if (string.IsNullOrEmpty(current))
+            current = "0";
 
         if (key == ".")
         {
             if (!current.Contains('.'))
-                _viewModel.ReceivedCashInput = current + ".";
+                SetKeypadValue(current + ".");
             return;
         }
 
-        _viewModel.ReceivedCashInput = current == "0" ? key : current + key;
+        SetKeypadValue(current == "0" ? key : current + key);
     }
 
     private void OnKeypadBackspaceClicked(object? sender, EventArgs e)
     {
-        string current = _viewModel.ReceivedCashInput ?? "0";
-        _viewModel.ReceivedCashInput = current.Length > 1 ? current[..^1] : "0";
+        string current = GetKeypadValue();
+        if (string.IsNullOrEmpty(current))
+            current = "0";
+        SetKeypadValue(current.Length > 1 ? current[..^1] : "0");
     }
 
-    private void OnKeypadClearClicked(object? sender, EventArgs e) => _viewModel.ReceivedCashInput = "0";
+    private void OnKeypadClearClicked(object? sender, EventArgs e) => SetKeypadValue("0");
 
     private void OnKeypadDoneClicked(object? sender, EventArgs e) => NumericKeypadOverlay.IsVisible = false;
 
@@ -149,9 +196,80 @@ public partial class MainPage : ContentPage
         NewProductExtrasFields.IsVisible = e.Value;
     }
 
+    private async void OnTakeProductPhotoClicked(object? sender, EventArgs e)
+    {
+        try
+        {
+            if (!MediaPicker.Default.IsCaptureSupported)
+            {
+                await DisplayAlert(
+                    "Cámara no disponible",
+                    "Este equipo no permite tomar fotografías desde la aplicación. Puedes elegir una imagen guardada.",
+                    "Entendido");
+                return;
+            }
+
+            FileResult? photo = await MediaPicker.Default.CapturePhotoAsync(new MediaPickerOptions
+            {
+                Title = "Foto del producto"
+            });
+            await UsePersonalProductPhotoAsync(photo);
+        }
+        catch (Exception ex)
+        {
+            ShowAddProductError($"No se pudo tomar la foto: {ex.Message}");
+        }
+    }
+
+    private async void OnChooseProductPhotoClicked(object? sender, EventArgs e)
+    {
+        try
+        {
+            FileResult? photo = await FilePicker.Default.PickAsync(new PickOptions
+            {
+                PickerTitle = "Selecciona una foto del producto",
+                FileTypes = FilePickerFileType.Images
+            });
+            await UsePersonalProductPhotoAsync(photo);
+        }
+        catch (Exception ex)
+        {
+            ShowAddProductError($"No se pudo abrir la imagen: {ex.Message}");
+        }
+    }
+
+    private async Task UsePersonalProductPhotoAsync(FileResult? photo)
+    {
+        if (photo is null)
+            return;
+
+        string extension = Path.GetExtension(photo.FileName).ToLowerInvariant();
+        if (extension is not (".jpg" or ".jpeg" or ".png" or ".webp"))
+            extension = ".jpg";
+
+        string directory = Path.Combine(FileSystem.AppDataDirectory, "ProductImages");
+        Directory.CreateDirectory(directory);
+        string localPath = Path.Combine(directory, $"personal_{Guid.NewGuid():N}{extension}");
+
+        await using Stream input = await photo.OpenReadAsync();
+        await using FileStream output = File.Create(localPath);
+        await input.CopyToAsync(output);
+
+        _selectedOpenverseImage = new OpenverseImageResult
+        {
+            Id = Path.GetFileNameWithoutExtension(localPath),
+            Title = "Foto propia",
+            Thumbnail = localPath,
+            License = string.Empty
+        };
+        NewProductImagePreview.Source = localPath;
+        NewProductImageAttribution.Text = "Foto propia guardada en este equipo";
+        AddProductErrorPanel.IsVisible = false;
+    }
+
     private async void OnSaveProductClicked(object? sender, EventArgs e)
     {
-        AddProductErrorText.IsVisible = false;
+        AddProductErrorPanel.IsVisible = false;
         string name = NewProductName.Text?.Trim() ?? string.Empty;
 
         if (name.Length == 0)
@@ -216,15 +334,15 @@ public partial class MainPage : ContentPage
         NewProductExtraPrice.Text = string.Empty;
         _selectedOpenverseImage = null;
         NewProductImagePreview.Source = "placeholder.png";
-        NewProductImageAttribution.Text = "Sin imagen seleccionada";
+        NewProductImageAttribution.Text = "Ninguna foto seleccionada";
         NewProductExtrasFields.IsVisible = false;
-        AddProductErrorText.IsVisible = false;
+        AddProductErrorPanel.IsVisible = false;
     }
 
     private void ShowAddProductError(string message)
     {
         AddProductErrorText.Text = message;
-        AddProductErrorText.IsVisible = true;
+        AddProductErrorPanel.IsVisible = true;
     }
 
     private static bool TryParseAmount(string? value, out decimal amount)
@@ -233,15 +351,13 @@ public partial class MainPage : ContentPage
         return decimal.TryParse(normalized, NumberStyles.Number, CultureInfo.InvariantCulture, out amount);
     }
 
-    private async void OnOpenversePickerClicked(object? sender, EventArgs e)
+    private void OnOpenversePickerClicked(object? sender, EventArgs e)
     {
         OpenverseGalleryOverlay.IsVisible = true;
         string productName = NewProductName.Text?.Trim() ?? string.Empty;
         string category = NewProductCategory.SelectedItem?.ToString() ?? "Helados";
-        OpenverseSearchEntry.Text = string.IsNullOrWhiteSpace(productName)
-            ? CategorySearchTerm(category)
-            : $"{productName} {CategorySearchTerm(category)}";
-        await SearchOpenverseAsync();
+        OpenverseSearchEntry.Text = productName;
+        ShowLocalLibrary(category);
     }
 
     private void OnCloseOpenverseClicked(object? sender, EventArgs e)
@@ -250,13 +366,13 @@ public partial class MainPage : ContentPage
         OpenverseGalleryOverlay.IsVisible = false;
     }
 
-    private async void OnOpenverseCategoryClicked(object? sender, EventArgs e)
+    private void OnOpenverseCategoryClicked(object? sender, EventArgs e)
     {
         if (sender is not Button { CommandParameter: string category })
             return;
 
-        OpenverseSearchEntry.Text = CategorySearchTerm(category);
-        await SearchOpenverseAsync();
+        OpenverseSearchEntry.Text = string.Empty;
+        ShowLocalLibrary(category);
     }
 
     private async void OnOpenverseSearchClicked(object? sender, EventArgs e) => await SearchOpenverseAsync();
@@ -267,7 +383,11 @@ public partial class MainPage : ContentPage
     {
         string query = OpenverseSearchEntry.Text?.Trim() ?? string.Empty;
         if (query.Length == 0)
-            return;
+        {
+            string category = NewProductCategory.SelectedItem?.ToString() ?? "Helados";
+            query = CategorySearchTerm(category);
+            OpenverseSearchEntry.Text = query;
+        }
 
         _openverseSearchCancellation?.Cancel();
         _openverseSearchCancellation?.Dispose();
@@ -306,16 +426,41 @@ public partial class MainPage : ContentPage
         }
     }
 
-    private void OnOpenverseImageSelected(object? sender, SelectionChangedEventArgs e)
+    private async void OnOpenverseImageSelected(object? sender, SelectionChangedEventArgs e)
     {
         if (e.CurrentSelection.FirstOrDefault() is not OpenverseImageResult image)
             return;
 
-        _selectedOpenverseImage = image;
-        NewProductImagePreview.Source = image.Thumbnail;
-        NewProductImageAttribution.Text = image.AttributionSummary;
-        OpenverseGalleryOverlay.IsVisible = false;
         OpenverseResultsView.SelectedItem = null;
+
+        try
+        {
+            OpenverseLoadingPanel.IsVisible = !image.IsLocalLibraryImage;
+            if (!image.IsLocalLibraryImage)
+                image.Thumbnail = await _openverseService.CacheImageAsync(image);
+
+            _selectedOpenverseImage = image;
+            NewProductImagePreview.Source = image.Thumbnail;
+            NewProductImageAttribution.Text = $"Imagen seleccionada: {image.DisplayTitle}";
+            OpenverseGalleryOverlay.IsVisible = false;
+        }
+        catch (Exception ex)
+        {
+            OpenverseStatusText.Text = $"No se pudo guardar la imagen en el equipo.\n{ex.Message}";
+            OpenverseStatusText.IsVisible = true;
+        }
+        finally
+        {
+            OpenverseLoadingPanel.IsVisible = false;
+        }
+    }
+
+    private void ShowLocalLibrary(string category)
+    {
+        _openverseSearchCancellation?.Cancel();
+        OpenverseLoadingPanel.IsVisible = false;
+        OpenverseStatusText.IsVisible = false;
+        OpenverseResultsView.ItemsSource = ProductImageLibrary.Find(category);
     }
 
     private static string CategorySearchTerm(string category) => category switch

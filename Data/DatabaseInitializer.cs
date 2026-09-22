@@ -1,4 +1,5 @@
 using HeladeriaPOS.Models;
+using HeladeriaPOS.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace HeladeriaPOS.Data;
@@ -70,9 +71,13 @@ public sealed class DatabaseInitializer
                 changed = true;
             }
 
-            if (string.IsNullOrWhiteSpace(existing.ImagePath))
+            if (!string.Equals(existing.ImagePath, seed.ImagePath, StringComparison.OrdinalIgnoreCase))
             {
                 existing.ImagePath = seed.ImagePath;
+                existing.ImageCreator = seed.ImageCreator;
+                existing.ImageLicense = seed.ImageLicense;
+                existing.ImageLicenseUrl = seed.ImageLicenseUrl;
+                existing.ImageSourceUrl = seed.ImageSourceUrl;
                 changed = true;
             }
 
@@ -138,19 +143,43 @@ public sealed class DatabaseInitializer
 
     private static Product[] CreateSeedProducts() =>
     [
-        new() { Name = "Papas / Sabritas", Category = ProductCategory.Snacks, ProductType = ProductType.PapasSabritas, BasePrice = 35m, Tag = "Snack", ImagePath = "placeholder.png" },
-        new() { Name = "Frituras", Category = ProductCategory.Snacks, ProductType = ProductType.Fritura, BasePrice = 15m, Tag = "Salsa incluida", ImagePath = "placeholder.png" },
-        new() { Name = "Sopa instantánea", Category = ProductCategory.Snacks, ProductType = ProductType.SopaPalomitas, BasePrice = 30m, Tag = "Caliente", ImagePath = "placeholder.png" },
-        new() { Name = "Palomitas", Category = ProductCategory.Snacks, ProductType = ProductType.SopaPalomitas, BasePrice = 30m, Tag = "Snack", ImagePath = "placeholder.png" },
+        Seed("Papas / Sabritas", ProductCategory.Snacks, ProductType.PapasSabritas, 35m, "Snack", "product_papas.jpg"),
+        Seed("Frituras", ProductCategory.Snacks, ProductType.Fritura, 15m, "Salsa incluida", "product_frituras.jpg"),
+        Seed("Sopa instantánea", ProductCategory.Snacks, ProductType.SopaPalomitas, 30m, "Caliente", "product_sopa.jpg"),
+        Seed("Palomitas", ProductCategory.Snacks, ProductType.SopaPalomitas, 30m, "Snack", "product_palomitas.jpg"),
 
-        new() { Name = "Barquillo", Category = ProductCategory.Helados, ProductType = ProductType.Barquillo, BasePrice = 25m, Tag = "Helado", ImagePath = "placeholder.png" },
-        new() { Name = "Vaso", Category = ProductCategory.Helados, ProductType = ProductType.Vaso, BasePrice = 25m, Tag = "Helado", ImagePath = "placeholder.png" },
-        new() { Name = "Canasta", Category = ProductCategory.Helados, ProductType = ProductType.Canasta, BasePrice = 45m, Tag = "Gourmet", ImagePath = "placeholder.png" },
-        new() { Name = "Envase / Bote", Category = ProductCategory.Helados, ProductType = ProductType.Envase, BasePrice = 65m, Tag = "Para llevar", ImagePath = "placeholder.png" },
+        Seed("Barquillo", ProductCategory.Helados, ProductType.Barquillo, 25m, "Helado", "product_barquillo.jpg"),
+        Seed("Vaso", ProductCategory.Helados, ProductType.Vaso, 25m, "Helado", "product_vaso.jpg"),
+        Seed("Canasta", ProductCategory.Helados, ProductType.Canasta, 45m, "Gourmet", "product_canasta.jpg"),
+        Seed("Envase / Bote", ProductCategory.Helados, ProductType.Envase, 65m, "Para llevar", "product_envase.jpg"),
 
-        new() { Name = "Malteada", Category = ProductCategory.Especialidades, ProductType = ProductType.Malteada, BasePrice = 40m, Tag = "Especialidad", ImagePath = "placeholder.png" },
-        new() { Name = "Copa", Category = ProductCategory.Especialidades, ProductType = ProductType.Copa, BasePrice = 70m, Tag = "Especialidad", ImagePath = "placeholder.png" },
-        new() { Name = "Banana Split", Category = ProductCategory.Especialidades, ProductType = ProductType.BananaSplit, BasePrice = 70m, Tag = "Especialidad", ImagePath = "placeholder.png" },
-        new() { Name = "Tres Marías", Category = ProductCategory.Especialidades, ProductType = ProductType.TresMarias, BasePrice = 70m, Tag = "Especialidad", ImagePath = "placeholder.png" }
+        Seed("Malteada", ProductCategory.Especialidades, ProductType.Malteada, 40m, "Especialidad", "product_malteada.jpg"),
+        Seed("Copa", ProductCategory.Especialidades, ProductType.Copa, 70m, "Especialidad", "product_copa.jpg"),
+        Seed("Banana Split", ProductCategory.Especialidades, ProductType.BananaSplit, 70m, "Especialidad", "product_banana_split.jpg"),
+        Seed("Tres Marías", ProductCategory.Especialidades, ProductType.TresMarias, 70m, "Especialidad", "product_tres_marias.jpg")
     ];
+
+    private static Product Seed(
+        string name,
+        ProductCategory category,
+        ProductType productType,
+        decimal basePrice,
+        string tag,
+        string imageFile)
+    {
+        OpenverseImageResult image = ProductImageLibrary.ForFile(imageFile);
+        return new Product
+        {
+            Name = name,
+            Category = category,
+            ProductType = productType,
+            BasePrice = basePrice,
+            Tag = tag,
+            ImagePath = image.Thumbnail,
+            ImageCreator = image.Creator,
+            ImageLicense = image.License,
+            ImageLicenseUrl = image.LicenseUrl,
+            ImageSourceUrl = image.SourceUrl
+        };
+    }
 }
