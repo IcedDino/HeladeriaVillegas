@@ -17,7 +17,9 @@ public sealed class ProductCardViewModel
         : $"Foto: {Model.ImageCreator} · {Model.ImageLicense}";
     public bool HasImageAttribution => !string.IsNullOrWhiteSpace(Model.ImageCreator);
     public decimal BasePrice => Model.BasePrice;
-    public string BasePriceDisplay => BasePrice.ToString("C0", CurrencyCulture);
+    public string BasePriceDisplay => Model.Prices.Count > 0
+        ? $"Desde {Model.Prices.Where(p => p.Code is "normal" or "Chico" or "Doble" or "MedioLitro").Select(p => p.Amount).DefaultIfEmpty(Model.BasePrice).Min().ToString("C0", CurrencyCulture)}"
+        : BasePrice.ToString("C0", CurrencyCulture);
     public IAsyncRelayCommand SelectCommand { get; }
 
     public ProductCardViewModel(Product product, Func<ProductCardViewModel, Task> select)

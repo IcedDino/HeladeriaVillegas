@@ -11,6 +11,8 @@ public sealed class OrderItem
     public decimal BaseUnitPrice { get; set; }
     public int Quantity { get; set; } = 1;
     public string? SelectedVariant { get; set; }
+    public string? Flavors { get; set; }
+    public string? Instructions { get; set; }
     public List<Modifier> Modifiers { get; set; } = [];
 
     [NotMapped]

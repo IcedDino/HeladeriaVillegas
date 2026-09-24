@@ -13,5 +13,11 @@ public sealed class Ticket
     public decimal Total { get; set; }
     public decimal Received { get; set; }
     public decimal Change { get; set; }
+    public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.Cash;
+    public decimal CardPaid { get; set; }
+    public decimal TransferPaid { get; set; }
+    public string? DiscountReason { get; set; }
+    public string? CancellationReason { get; set; }
+    public DateTime? CancelledAt { get; set; }
     public List<OrderItem> Items { get; set; } = [];
 }

@@ -19,6 +19,8 @@ public sealed class DatabaseInitializer
         await db.Database.EnsureCreatedAsync();
 
         await EnsureProductColumnsAsync(db);
+        await EnsureSalesColumnsAsync(db);
+        await EnsureFlavorTableAsync(db);
 
         await db.Database.OpenConnectionAsync();
         try
@@ -34,15 +36,22 @@ public sealed class DatabaseInitializer
         }
 
         Product[] seedProducts = CreateSeedProducts();
+        if (!await db.Flavors.AnyAsync())
+        {
+            db.Flavors.AddRange(new[] { "Vainilla", "Chocolate", "Fresa", "Napolitano", "Oreo", "Café" }.Select(name => new Flavor { Name = name }));
+            await db.SaveChangesAsync();
+        }
 
         if (!await db.Products.AnyAsync())
         {
+            foreach (Product product in seedProducts)
+                product.Prices = PriceCatalog.Defaults(product.ProductType);
             db.Products.AddRange(seedProducts);
             await db.SaveChangesAsync();
             return;
         }
 
-        List<Product> existingProducts = await db.Products.ToListAsync();
+        List<Product> existingProducts = await db.Products.Include(p => p.Prices).ToListAsync();
         bool changed = false;
 
         foreach (Product seed in seedProducts)
@@ -54,36 +63,14 @@ public sealed class DatabaseInitializer
 
             if (existing is null)
             {
+                seed.Prices = PriceCatalog.Defaults(seed.ProductType);
                 db.Products.Add(seed);
                 changed = true;
                 continue;
             }
-
-            if (existing.BasePrice != seed.BasePrice)
+            if (existing.Prices.Count == 0 && existing.ProductType != ProductType.Custom)
             {
-                existing.BasePrice = seed.BasePrice;
-                changed = true;
-            }
-
-            if (existing.Tag != seed.Tag)
-            {
-                existing.Tag = seed.Tag;
-                changed = true;
-            }
-
-            if (!string.Equals(existing.ImagePath, seed.ImagePath, StringComparison.OrdinalIgnoreCase))
-            {
-                existing.ImagePath = seed.ImagePath;
-                existing.ImageCreator = seed.ImageCreator;
-                existing.ImageLicense = seed.ImageLicense;
-                existing.ImageLicenseUrl = seed.ImageLicenseUrl;
-                existing.ImageSourceUrl = seed.ImageSourceUrl;
-                changed = true;
-            }
-
-            if (!existing.IsActive)
-            {
-                existing.IsActive = true;
+                existing.Prices.AddRange(PriceCatalog.Defaults(existing.ProductType));
                 changed = true;
             }
         }
@@ -139,6 +126,59 @@ public sealed class DatabaseInitializer
         {
             await db.Database.CloseConnectionAsync();
         }
+    }
+
+    private static async Task EnsureSalesColumnsAsync(PosDbContext db)
+    {
+        await db.Database.OpenConnectionAsync();
+        try
+        {
+            await AddMissingColumnsAsync(db, "Tickets", [
+                "PaymentMethod INTEGER NOT NULL DEFAULT 0",
+                "CardPaid INTEGER NOT NULL DEFAULT 0",
+                "TransferPaid INTEGER NOT NULL DEFAULT 0",
+                "DiscountReason TEXT NULL",
+                "CancellationReason TEXT NULL",
+                "CancelledAt TEXT NULL"]);
+            await AddMissingColumnsAsync(db, "OrderItems", ["Flavors TEXT NULL", "Instructions TEXT NULL"]);
+            await using var command = db.Database.GetDbConnection().CreateCommand();
+            command.CommandText = "CREATE TABLE IF NOT EXISTS ProductPrices (Id INTEGER NOT NULL CONSTRAINT PK_ProductPrices PRIMARY KEY AUTOINCREMENT, ProductId INTEGER NOT NULL, Code TEXT NOT NULL, Label TEXT NOT NULL, Amount INTEGER NOT NULL, CONSTRAINT FK_ProductPrices_Products_ProductId FOREIGN KEY (ProductId) REFERENCES Products (Id) ON DELETE CASCADE); CREATE UNIQUE INDEX IF NOT EXISTS IX_ProductPrices_ProductId_Code ON ProductPrices (ProductId, Code);";
+            await command.ExecuteNonQueryAsync();
+        }
+        finally
+        {
+            await db.Database.CloseConnectionAsync();
+        }
+    }
+
+    private static async Task AddMissingColumnsAsync(PosDbContext db, string table, string[] definitions)
+    {
+        var columns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        await using (var command = db.Database.GetDbConnection().CreateCommand())
+        {
+            command.CommandText = $"PRAGMA table_info('{table}');";
+            await using var reader = await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync()) columns.Add(reader.GetString(1));
+        }
+        foreach (string definition in definitions)
+        {
+            if (columns.Contains(definition.Split(' ', 2)[0])) continue;
+            await using var command = db.Database.GetDbConnection().CreateCommand();
+            command.CommandText = $"ALTER TABLE {table} ADD COLUMN {definition};";
+            await command.ExecuteNonQueryAsync();
+        }
+    }
+
+    private static async Task EnsureFlavorTableAsync(PosDbContext db)
+    {
+        await db.Database.OpenConnectionAsync();
+        try
+        {
+            await using var command = db.Database.GetDbConnection().CreateCommand();
+            command.CommandText = "CREATE TABLE IF NOT EXISTS Flavors (Id INTEGER NOT NULL CONSTRAINT PK_Flavors PRIMARY KEY AUTOINCREMENT, Name TEXT NOT NULL, IsAvailable INTEGER NOT NULL DEFAULT 1); CREATE UNIQUE INDEX IF NOT EXISTS IX_Flavors_Name ON Flavors (Name);";
+            await command.ExecuteNonQueryAsync();
+        }
+        finally { await db.Database.CloseConnectionAsync(); }
     }
 
     private static Product[] CreateSeedProducts() =>

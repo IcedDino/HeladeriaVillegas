@@ -30,6 +30,14 @@ public enum TicketStatus
     Cancelled
 }
 
+public enum PaymentMethod
+{
+    Cash,
+    Card,
+    Transfer,
+    Mixed
+}
+
 public enum ModifierType
 {
     Preparation,

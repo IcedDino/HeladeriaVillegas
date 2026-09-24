@@ -13,4 +13,6 @@ public sealed class ProductSelection
 
     public bool Chantilly { get; set; }
     public int OtherIngredientCount { get; set; }
+    public string? Flavors { get; set; }
+    public string? Instructions { get; set; }
 }

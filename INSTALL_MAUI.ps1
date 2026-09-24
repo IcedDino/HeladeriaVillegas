@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 $LocalDotnet = Join-Path $env:LOCALAPPDATA "Microsoft\dotnet\dotnet.exe"
-$Dotnet = if (Get-Command dotnet -ErrorAction SilentlyContinue) { "dotnet" } elseif (Test-Path $LocalDotnet) { $LocalDotnet } else { throw ".NET SDK no encontrado." }
+$Dotnet = if (Test-Path $LocalDotnet) { $LocalDotnet } elseif (Get-Command dotnet -ErrorAction SilentlyContinue) { "dotnet" } else { throw ".NET SDK no encontrado." }
 
 Write-Host "Usando: $Dotnet" -ForegroundColor Cyan
 & $Dotnet --version

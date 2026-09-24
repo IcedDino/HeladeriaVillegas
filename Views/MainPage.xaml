@@ -37,10 +37,19 @@
     <Grid x:Name='MainContent' ColumnDefinitions="4*,1*" ColumnSpacing="12" Margin="12">
        
         <Border Style="{StaticResource PanelStyle}" Padding="12">
-            <Grid x:Name='Catalogue' RowDefinitions="1*,9*" RowSpacing="12">
+            <Grid x:Name='Catalogue' RowDefinitions="Auto,Auto,*" RowSpacing="8">
+                <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
+                    <VerticalStackLayout>
+                        <Label Text="Heladería POS" FontSize="23" FontAttributes="Bold" />
+                        <Label Text="{Binding StatusMessage}" FontSize="12" TextColor="{StaticResource TextSecondary}" />
+                    </VerticalStackLayout>
+                    <Button Grid.Column="1" Text="Ventas" Clicked="OnSalesClicked" Style="{StaticResource TouchButtonStyle}" />
+                    <Button Grid.Column="2" Text="Precios" Clicked="OnPricesClicked" Style="{StaticResource TouchButtonStyle}" />
+                    <Button Grid.Column="3" Text="Respaldo" Clicked="OnBackupClicked" Style="{StaticResource TouchButtonStyle}" />
+                </Grid>
                 
                 <!--Categories -->
-                <Grid x:Name='Categories' ColumnDefinitions="*,*,*" ColumnSpacing="12" HorizontalOptions="Fill" VerticalOptions="Fill">
+                <Grid x:Name='Categories' Grid.Row="1" ColumnDefinitions="*,*,*" ColumnSpacing="12" HorizontalOptions="Fill" VerticalOptions="Fill">
                     <Button Text="🍦  Helados" Grid.Column="0" HorizontalOptions="Fill" VerticalOptions="Fill" Style="{StaticResource CategoryButtonStyle}" Command="{Binding SelectCategoryCommand}" CommandParameter="Helados">
                             <Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding IsHeladosSelected}" Value="True">
                                 <Setter Property="BackgroundColor" Value="{StaticResource BrandDarkRed}" /><Setter Property="TextColor" Value="White" />
@@ -59,7 +68,7 @@
                 </Grid>
                 
                 <!-- Catalogue -->
-                <CollectionView x:Name="ProductCollectionView" Grid.Row="1" ItemsSource="{Binding FilteredProducts}" SelectionMode="None" ItemsUpdatingScrollMode="KeepScrollOffset">
+                <CollectionView x:Name="ProductCollectionView" Grid.Row="2" ItemsSource="{Binding FilteredProducts}" SelectionMode="None" ItemsUpdatingScrollMode="KeepScrollOffset">
                         <CollectionView.ItemsLayout>
                             <GridItemsLayout x:Name="ProductGridLayout" Orientation="Vertical" Span="8" HorizontalItemSpacing="12" VerticalItemSpacing="12" />
                         </CollectionView.ItemsLayout>
@@ -105,10 +114,10 @@
         
         <!-- Purchase summary -->
         <Border Grid.Column="1" Style="{StaticResource PanelStyle}" Padding="12">
-                <Grid RowDefinitions="*,Auto" RowSpacing="10">
-                    <ScrollView VerticalScrollBarVisibility="Default">
-                        <VerticalStackLayout Spacing="10">
-                            <CollectionView ItemsSource="{Binding Cart}" SelectionMode="None">
+                 <Grid RowDefinitions="*,Auto,Auto" RowSpacing="10">
+                    <Grid RowDefinitions="Auto,*,Auto,250" RowSpacing="6">
+                            <Label Text="{Binding OrderNumber}" FontSize="15" FontAttributes="Bold" />
+                            <CollectionView Grid.Row="1" ItemsSource="{Binding Cart}" SelectionMode="None">
                                 <CollectionView.EmptyView>
                                     <VerticalStackLayout Spacing="5" VerticalOptions="Center" HorizontalOptions="Center" Padding="12">
                                         <Label Text="Tu ticket está vacío" FontSize="17" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#5C6477" />
@@ -139,10 +148,17 @@
                                 </CollectionView.ItemTemplate>
                             </CollectionView>
 
-                            <Button Text="Cancelar orden" Command="{Binding ClearCartCommand}" BackgroundColor="#FFDAD6" TextColor="#93000A" CornerRadius="10" HeightRequest="44" FontSize="13" FontAttributes="Bold" Padding="8,0" />
+                            <VerticalStackLayout Grid.Row="2" Spacing="5">
+                            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="5">
+                                <Button Text="Cancelar" Clicked="OnCancelOrderClicked" BackgroundColor="#FFDAD6" TextColor="#93000A" HeightRequest="48" FontSize="13" />
+                                <Button Grid.Column="1" Text="En espera" Clicked="OnHoldOrderClicked" HeightRequest="48" FontSize="13" />
+                                <Button Grid.Column="2" Text="Recuperar" Clicked="OnRestoreHeldClicked" HeightRequest="48" FontSize="13" />
+                            </Grid>
+                            <Button Text="Deshacer cancelación" Clicked="OnUndoOrderClicked" IsVisible="{Binding CanUndoClear}" HeightRequest="48" />
 
-                            <BoxView HeightRequest="1" Color="#DAE2FD" />
+                            </VerticalStackLayout>
 
+                            <ScrollView Grid.Row="3" VerticalScrollBarVisibility="Default">
                             <Grid ColumnDefinitions="*,116" ColumnSpacing="14">
                                 <VerticalStackLayout Spacing="10">
                                     <Label Text="RESUMEN DE VENTA" FontSize="11" CharacterSpacing="1" FontAttributes="Bold" TextColor="#5C6477" />
@@ -156,8 +172,11 @@
                                     </Grid>
                                     <Grid ColumnDefinitions="*,90" ColumnSpacing="6">
                                         <Label Text="Descuento" FontSize="13" TextColor="{StaticResource CheckoutGreen}" VerticalOptions="Center" />
-                                        <Entry Grid.Column="1" Text="{Binding DiscountInput, Mode=TwoWay}" Keyboard="Numeric" Style="{StaticResource TouchEntryStyle}" FontSize="16" MinimumHeightRequest="44" HorizontalTextAlignment="End" SemanticProperties.Description="Descuento en pesos" />
+                                        <Entry x:Name="DiscountEntry" Grid.Column="1" Text="{Binding DiscountInput, Mode=TwoWay}" IsReadOnly="True" Focused="OnDiscountFocused" Style="{StaticResource TouchEntryStyle}" FontSize="16" MinimumHeightRequest="44" HorizontalTextAlignment="End" SemanticProperties.Description="Descuento en pesos">
+                                            <Entry.GestureRecognizers><TapGestureRecognizer Tapped="OnDiscountTapped" /></Entry.GestureRecognizers>
+                                        </Entry>
                                     </Grid>
+                                    <Entry Text="{Binding DiscountReason, Mode=TwoWay}" Placeholder="Motivo del descuento" Style="{StaticResource TouchEntryStyle}" FontSize="14" IsVisible="True" />
                                     <BoxView HeightRequest="1" Color="#DAE2FD" />
                                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4">
                                         <Label Text="TOTAL A PAGAR" FontSize="11" FontAttributes="Bold" VerticalOptions="Center" />
@@ -166,7 +185,7 @@
                                             <Label Text="MXN" FontSize="10" TextColor="#5C6477" HorizontalTextAlignment="End" />
                                         </VerticalStackLayout>
                                     </Grid>
-                                    <Border BackgroundColor="#F2F3FF" StrokeThickness="0" StrokeShape="RoundRectangle 10" Padding="10">
+                                    <Border IsVisible="{Binding IsCashPayment}" BackgroundColor="#F2F3FF" StrokeThickness="0" StrokeShape="RoundRectangle 10" Padding="10">
                                         <Border.GestureRecognizers>
                                             <TapGestureRecognizer Tapped="OnReceivedCashTapped" />
                                         </Border.GestureRecognizers>
@@ -177,13 +196,25 @@
                                                    Focused="OnReceivedCashFocused" SemanticProperties.Description="Efectivo recibido en pesos. Toca para abrir el teclado numérico." />
                                         </VerticalStackLayout>
                                     </Border>
-                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4">
+                                    <Label Text="Forma de pago" FontSize="14" FontAttributes="Bold" />
+                                    <Grid ColumnDefinitions="*,*" RowDefinitions="48,48" ColumnSpacing="5" RowSpacing="5">
+                                        <Button Text="Efectivo" Command="{Binding SelectPaymentCommand}" CommandParameter="Cash" />
+                                        <Button Grid.Column="1" Text="Tarjeta" Command="{Binding SelectPaymentCommand}" CommandParameter="Card" />
+                                        <Button Grid.Row="1" Text="Transferencia" Command="{Binding SelectPaymentCommand}" CommandParameter="Transfer" />
+                                        <Button Grid.Row="1" Grid.Column="1" Text="Mixto" Command="{Binding SelectPaymentCommand}" CommandParameter="Mixed" />
+                                    </Grid>
+                                    <Label Text="{Binding PaymentMethodDisplay}" FontSize="13" FontAttributes="Bold" />
+                                    <VerticalStackLayout IsVisible="{Binding IsMixedPayment}" Spacing="5">
+                                        <Entry x:Name="CardEntry" Text="{Binding CardInput, Mode=TwoWay}" IsReadOnly="True" Focused="OnCardFocused" Placeholder="Importe tarjeta" Style="{StaticResource TouchEntryStyle}"><Entry.GestureRecognizers><TapGestureRecognizer Tapped="OnCardTapped" /></Entry.GestureRecognizers></Entry>
+                                        <Entry x:Name="TransferEntry" Text="{Binding TransferInput, Mode=TwoWay}" IsReadOnly="True" Focused="OnTransferFocused" Placeholder="Importe transferencia" Style="{StaticResource TouchEntryStyle}"><Entry.GestureRecognizers><TapGestureRecognizer Tapped="OnTransferTapped" /></Entry.GestureRecognizers></Entry>
+                                    </VerticalStackLayout>
+                                    <Grid IsVisible="{Binding IsCashPayment}" ColumnDefinitions="*,Auto" ColumnSpacing="4">
                                         <Label Text="Cambio" FontSize="14" FontAttributes="Bold" TextColor="{StaticResource CheckoutGreen}" VerticalOptions="Center" />
                                         <Label Grid.Column="1" Text="{Binding ChangeDisplay}" FontSize="24" FontAttributes="Bold" TextColor="{StaticResource CheckoutGreen}" />
                                     </Grid>
                                 </VerticalStackLayout>
 
-                                <VerticalStackLayout Grid.Column="1" Spacing="7">
+                                <VerticalStackLayout Grid.Column="1" Spacing="7" IsVisible="{Binding IsCashPayment}">
                                     <Label Text="BILLETES" FontSize="11" FontAttributes="Bold" CharacterSpacing="1" TextColor="#5C6477" Margin="0,0,0,3" />
                                     <Button Text="Exacto" Style="{StaticResource QuickCashButtonStyle}" Command="{Binding ApplyQuickCashCommand}" CommandParameter="Exacto" BackgroundColor="#DDF8EA" TextColor="#006C4A" />
                                     <Button Text="+$20" Style="{StaticResource QuickCashButtonStyle}" Command="{Binding ApplyQuickCashCommand}" CommandParameter="20" />
@@ -194,12 +225,14 @@
                                     <Button Text="Limpiar" Style="{StaticResource QuickCashButtonStyle}" Command="{Binding ApplyQuickCashCommand}" CommandParameter="Limpiar" BackgroundColor="#FFDAD6" TextColor="#93000A" />
                                 </VerticalStackLayout>
                             </Grid>
-                        </VerticalStackLayout>
-                    </ScrollView>
+                            </ScrollView>
+                    </Grid>
 
                     <BoxView Grid.Row="1" HeightRequest="1" Color="#E8E9F3" />
 
-                    <Button Grid.Row="2" Text="{Binding CheckoutLabel}" Command="{Binding CheckoutCommand}" HeightRequest="68" CornerRadius="12" FontSize="18" FontAttributes="Bold"
+                    <VerticalStackLayout Grid.Row="2" Spacing="4">
+                    <Label Text="{Binding CheckoutHint}" FontSize="12" HorizontalTextAlignment="Center" />
+                    <Button Text="{Binding CheckoutLabel}" Command="{Binding CheckoutCommand}" HeightRequest="68" CornerRadius="12" FontSize="18" FontAttributes="Bold"
                             BackgroundColor="{StaticResource CheckoutGreen}" TextColor="White" Padding="12,0" SemanticProperties.Description="Cobrar y registrar ticket">
                         <Button.Triggers>
                             <Trigger TargetType="Button" Property="IsEnabled" Value="False">
@@ -207,6 +240,7 @@
                             </Trigger>
                         </Button.Triggers>
                     </Button>
+                    </VerticalStackLayout>
                 </Grid>
             </Border>
         

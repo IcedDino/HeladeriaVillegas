@@ -27,8 +27,8 @@ public partial class App : Application
             Title = "Heladería POS",
             Width = 1440,
             Height = 900,
-            MinimumWidth = 1000,
-            MinimumHeight = 820
+            MinimumWidth = 900,
+            MinimumHeight = 680
         };
 
 #if WINDOWS

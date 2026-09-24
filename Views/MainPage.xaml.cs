@@ -10,6 +10,8 @@ public partial class MainPage : ContentPage
     private readonly MainViewModel _viewModel;
     private readonly IProductDialogService _dialogService;
     private readonly OpenverseService _openverseService;
+    private readonly TicketService _ticketService;
+    private readonly BackupService _backupService;
     private OpenverseImageResult? _selectedOpenverseImage;
     private CancellationTokenSource? _openverseSearchCancellation;
     private bool _loaded;
@@ -18,16 +20,21 @@ public partial class MainPage : ContentPage
     {
         Cash,
         BasePrice,
-        ExtraPrice
+        ExtraPrice,
+        Discount,
+        Card,
+        Transfer
     }
 
     private KeypadTarget _keypadTarget = KeypadTarget.Cash;
-    public MainPage(MainViewModel viewModel, IProductDialogService dialogService, OpenverseService openverseService)
+    public MainPage(MainViewModel viewModel, IProductDialogService dialogService, OpenverseService openverseService, TicketService ticketService, BackupService backupService)
     {
         InitializeComponent();
         BindingContext = _viewModel = viewModel;
         _dialogService = dialogService;
         _openverseService = openverseService;
+        _ticketService = ticketService;
+        _backupService = backupService;
         ProductCollectionView.SizeChanged += (s, e) => UpdateCardHeight();
     }
 
@@ -101,6 +108,12 @@ public partial class MainPage : ContentPage
     private void OnReceivedCashTapped(object? sender, TappedEventArgs e) => ShowNumericKeypad();
 
     private void OnReceivedCashFocused(object? sender, FocusEventArgs e) => ShowNumericKeypad();
+    private void OnDiscountFocused(object? sender, FocusEventArgs e) => ShowKeypad(KeypadTarget.Discount, "DESCUENTO");
+    private void OnDiscountTapped(object? sender, TappedEventArgs e) => ShowKeypad(KeypadTarget.Discount, "DESCUENTO");
+    private void OnCardFocused(object? sender, FocusEventArgs e) => ShowKeypad(KeypadTarget.Card, "PAGO CON TARJETA");
+    private void OnCardTapped(object? sender, TappedEventArgs e) => ShowKeypad(KeypadTarget.Card, "PAGO CON TARJETA");
+    private void OnTransferFocused(object? sender, FocusEventArgs e) => ShowKeypad(KeypadTarget.Transfer, "TRANSFERENCIA");
+    private void OnTransferTapped(object? sender, TappedEventArgs e) => ShowKeypad(KeypadTarget.Transfer, "TRANSFERENCIA");
 
     private void OnBasePriceTapped(object? sender, TappedEventArgs e) =>
         ShowKeypad(KeypadTarget.BasePrice, "PRECIO BASE");
@@ -116,6 +129,9 @@ public partial class MainPage : ContentPage
         KeypadTitle.Text = title;
         if (target == KeypadTarget.Cash)
             ReceivedCashEntry.Unfocus();
+        if (target == KeypadTarget.Discount) DiscountEntry.Unfocus();
+        if (target == KeypadTarget.Card) CardEntry.Unfocus();
+        if (target == KeypadTarget.Transfer) TransferEntry.Unfocus();
         NumericKeypadOverlay.IsVisible = true;
     }
 
@@ -123,6 +139,9 @@ public partial class MainPage : ContentPage
     {
         KeypadTarget.BasePrice => NewProductPrice.Text ?? string.Empty,
         KeypadTarget.ExtraPrice => NewProductExtraPrice.Text ?? string.Empty,
+        KeypadTarget.Discount => _viewModel.DiscountInput,
+        KeypadTarget.Card => _viewModel.CardInput,
+        KeypadTarget.Transfer => _viewModel.TransferInput,
         _ => _viewModel.ReceivedCashInput ?? "0"
     };
 
@@ -135,6 +154,15 @@ public partial class MainPage : ContentPage
                 break;
             case KeypadTarget.ExtraPrice:
                 NewProductExtraPrice.Text = value;
+                break;
+            case KeypadTarget.Discount:
+                _viewModel.DiscountInput = value;
+                break;
+            case KeypadTarget.Card:
+                _viewModel.CardInput = value;
+                break;
+            case KeypadTarget.Transfer:
+                _viewModel.TransferInput = value;
                 break;
             default:
                 _viewModel.ReceivedCashInput = value;
@@ -158,6 +186,9 @@ public partial class MainPage : ContentPage
             return;
         }
 
+        if (current.Contains('.') && current.Split('.')[1].Length >= 2) return;
+        if (current.Replace(".", "").Length >= 7) return;
+
         SetKeypadValue(current == "0" ? key : current + key);
     }
 
@@ -178,6 +209,57 @@ public partial class MainPage : ContentPage
     private void OnKeypadPanelTapped(object? sender, TappedEventArgs e)
     {
         // Impide que un toque dentro del panel cierre el teclado por propagación.
+    }
+
+    private async void OnCancelOrderClicked(object? sender, EventArgs e)
+    {
+        if (!_viewModel.HasItemsInCart) return;
+        if (await DisplayAlert("Cancelar orden", $"¿Vaciar {_viewModel.CartItemCountDisplay} de la orden {_viewModel.OrderNumber}?", "Cancelar orden", "Conservar"))
+            _viewModel.CancelCurrentOrder();
+    }
+
+    private void OnUndoOrderClicked(object? sender, EventArgs e) => _viewModel.UndoClear();
+
+    private async void OnHoldOrderClicked(object? sender, EventArgs e)
+    {
+        if (!_viewModel.HasItemsInCart) return;
+        _viewModel.HoldCurrentOrder();
+        await DisplayAlert("Orden en espera", "Puedes recuperarla desde el botón Recuperar.", "Aceptar");
+    }
+
+    private async void OnRestoreHeldClicked(object? sender, EventArgs e)
+    {
+        IReadOnlyList<string> orders = _viewModel.HeldOrders();
+        if (orders.Count == 0) { await DisplayAlert("Órdenes en espera", "No hay órdenes guardadas.", "Aceptar"); return; }
+        string? selected = await DisplayActionSheet("Recuperar orden", "Cerrar", null, orders.ToArray());
+        if (selected is null || selected == "Cerrar") return;
+        if (_viewModel.HasItemsInCart && !await DisplayAlert("Orden actual", "La orden actual será reemplazada. ¿Continuar?", "Continuar", "Volver")) return;
+        if (_viewModel.HasItemsInCart) _viewModel.HoldCurrentOrder();
+        _viewModel.RestoreHeldOrder(selected);
+    }
+
+    private async void OnSalesClicked(object? sender, EventArgs e) => await Navigation.PushModalAsync(new NavigationPage(new SalesPage(_ticketService)));
+    private async void OnPricesClicked(object? sender, EventArgs e) => await Navigation.PushModalAsync(new NavigationPage(new PricesPage(_ticketService, _viewModel)));
+    private async void OnBackupClicked(object? sender, EventArgs e)
+    {
+        try
+        {
+            string? choice = await DisplayActionSheet("Base de datos", "Cerrar", null, "Crear respaldo", "Restaurar respaldo");
+            if (choice == "Crear respaldo")
+            {
+                string path = _backupService.CreateBackup();
+                await DisplayAlert("Respaldo verificado", $"Copia creada en:\n{path}\n\nCópiala también a una USB o nube para protegerla si falla esta computadora.", "Aceptar");
+            }
+            else if (choice == "Restaurar respaldo")
+            {
+                FileResult? file = await FilePicker.Default.PickAsync(new PickOptions { PickerTitle = "Selecciona una copia pos_*.db" });
+                if (file is null) return;
+                if (!await DisplayAlert("Restaurar ventas", "Al reiniciar, el respaldo reemplazará la base actual. Se conservará una copia de la base anterior. ¿Continuar?", "Preparar restauración", "Volver")) return;
+                _backupService.ScheduleRestore(file.FullPath);
+                await DisplayAlert("Restauración preparada", "Cierra y vuelve a abrir la aplicación para aplicar el respaldo.", "Aceptar");
+            }
+        }
+        catch (Exception ex) { await DisplayAlert("Error de respaldo", ex.Message, "Aceptar"); }
     }
 
     private void OnAddProductClicked(object? sender, EventArgs e)

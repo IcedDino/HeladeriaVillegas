@@ -1,74 +1,40 @@
-# Heladería POS — .NET MAUI 8
+# Heladería Villegas POS
 
-Punto de venta táctil para Windows, rehecho con **.NET MAUI**, **.NET 8**, **CommunityToolkit.Mvvm**, **EF Core** y **SQLite**.
+Punto de venta táctil para Windows con .NET MAUI 8, SQLite y funcionamiento local.
 
-## Incluye
+## Uso en caja
 
-- Catálogo táctil por categorías.
-- Imágenes e iconos propios para productos y botones.
-- Icono de aplicación con cono de helado.
-- Ticket activo con botones grandes `+` y `−`.
-- Cobro rápido: Exacto, +20, +50, +100, +200, +500 y Limpiar.
-- Motor de precios para Snacks, Helados y Especialidades.
-- Base SQLite 100% local/offline.
-- Persistencia de tickets.
-- Diseño pensado para pantallas táctiles de caja.
-- Ventana maximizada al iniciar en Windows.
+- Selecciona categoría y producto. El configurador muestra el precio final antes de agregarlo.
+- En helados y especialidades, elige sabores disponibles e indica instrucciones de preparación.
+- Ajusta cantidades con `+` y `−`. El ticket en curso se guarda automáticamente y se recupera al abrir la aplicación.
+- `En espera` guarda la orden actual para atender otra. `Recuperar` vuelve a abrirla.
+- `Cancelar` pide confirmación; `Deshacer cancelación` restaura la última orden vaciada mientras la aplicación siga abierta.
+- Elige efectivo, tarjeta, transferencia o pago mixto. En efectivo se calcula el cambio. Los descuentos requieren motivo y no pueden cubrir todo el subtotal.
+- `Ventas` muestra historial diario, corte por método, cancelación con motivo y reimpresión.
+- `Precios` permite cambiar precios y marcar productos o sabores como no disponibles. Los cambios persisten después de reiniciar.
+- `Respaldo` crea una copia SQLite verificada o prepara una restauración. La restauración se aplica al siguiente inicio y guarda antes la base anterior en `BeforeRestore`.
 
-## Requisito importante: workload de MAUI
+## Datos y respaldos
 
-Tu SDK de .NET 8 no instala MAUI automáticamente. Ejecuta una vez:
+La base `pos.db`, las órdenes en espera, las imágenes y los respaldos se guardan en `FileSystem.AppDataDirectory` de MAUI. La aplicación crea un respaldo por día al iniciar. Copia periódicamente la carpeta `Backups` a una USB u otro equipo; las copias en el mismo disco no protegen de una falla física.
 
-```powershell
-Set-ExecutionPolicy -Scope Process Bypass
-.\INSTALL_MAUI.ps1
-```
+Al restaurar, cierra y abre de nuevo la aplicación. Revisa el historial antes de volver a vender.
 
-O manualmente:
+Los comprobantes de texto se guardan en `Receipts`. El botón `Imprimir` usa el controlador de impresión predeterminado de Windows para archivos `.txt`; configura una impresora predeterminada que admita ese formato antes de usarlo en caja.
 
-```powershell
-& "$env:LOCALAPPDATA\Microsoft\dotnet\dotnet.exe" workload install maui-windows
-& "$env:LOCALAPPDATA\Microsoft\dotnet\dotnet.exe" workload restore .\HeladeriaPOS.Maui.csproj
-```
+## Preparación del equipo Windows
 
-## Ejecutar
+1. Instala el SDK .NET 8.0.425 y el workload `maui-windows` para compilar.
+2. Ejecuta `RUN.bat` o `RUN.ps1` para desarrollo.
+3. Ejecuta `BUILD_RELEASE.ps1` para publicar en `bin/Release/net8.0-windows10.0.19041.0/win-x64/publish`.
+4. En el equipo donde se use la publicación, instala **Windows App Runtime 1.4 x64**. La publicación incluye .NET, pero usa el runtime de Windows App SDK instalado en el equipo.
 
-```powershell
-Set-ExecutionPolicy -Scope Process Bypass
-.\RUN.ps1
-```
+La ventana inicia maximizada y admite 900 × 680 como mínimo. Verifica el diseño en la resolución y escala de Windows del equipo táctil definitivo.
 
-O manualmente:
+## Verificación
 
 ```powershell
-& "$env:LOCALAPPDATA\Microsoft\dotnet\dotnet.exe" restore .\HeladeriaPOS.Maui.csproj
-& "$env:LOCALAPPDATA\Microsoft\dotnet\dotnet.exe" build .\HeladeriaPOS.Maui.csproj -t:Run -f net8.0-windows10.0.19041.0 -c Debug -p:RuntimeIdentifier=win-x64 -p:WindowsPackageType=None
+& "$env:LOCALAPPDATA\Microsoft\dotnet\dotnet.exe" run --project .\Verification\Verification.csproj
 ```
 
-## Ejecutar en macOS
-
-Requiere el SDK de .NET 8, el workload `maui-maccatalyst` y Xcode completo.
-Desde la carpeta del proyecto:
-
-```bash
-bash RUN.sh
-```
-
-El script selecciona Xcode instalado, compila para la arquitectura del Mac y abre la aplicación.
-Puedes indicar otra instalación de Xcode mediante `DEVELOPER_DIR`.
-
-## Visual Studio (Windows)
-
-Abre `HeladeriaPOS.Maui.sln`. Visual Studio debe tener instalado el workload **.NET Multi-platform App UI development**.
-
-## Base de datos
-
-MAUI guarda `pos.db` dentro de `FileSystem.AppDataDirectory`. Se crea automáticamente en el primer inicio.
-
-## Release
-
-```powershell
-.\BUILD_RELEASE.ps1
-```
-
-La publicación es Windows x64, unpackaged y self-contained.
+La comprobación cubre creación y actualización de la base, precios persistentes, disponibilidad, cálculo de venta, cancelación, borradores y respaldo/restauración.

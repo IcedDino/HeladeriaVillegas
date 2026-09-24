@@ -6,189 +6,71 @@ public sealed class PricingService
 {
     public PricingResult Calculate(Product product, ProductSelection selection)
     {
-        return product.ProductType switch
-        {
-            ProductType.Custom => CalculateCustom(product, selection),
-            ProductType.PapasSabritas => CalculatePapasSabritas(selection),
-            ProductType.Fritura => CalculateFritura(selection),
-            ProductType.SopaPalomitas => CalculateSopaPalomitas(selection),
-            ProductType.Barquillo or ProductType.Vaso => CalculateBarquilloVaso(selection),
-            ProductType.Canasta => CalculateCanasta(selection),
-            ProductType.Envase => CalculateEnvase(selection),
-            ProductType.Malteada or ProductType.Copa or ProductType.BananaSplit or ProductType.TresMarias => CalculateSpecialty(product, selection),
-            _ => throw new NotSupportedException($"Tipo no soportado: {product.ProductType}")
-        };
-    }
-
-    private static PricingResult CalculateCustom(Product product, ProductSelection selection)
-    {
         var modifiers = new List<Modifier>();
-        if (product.AllowsExtras)
+        decimal amount;
+        string variant;
+        decimal Price(string code) => PriceCatalog.Get(product, code);
+        void Extra(string code, ModifierType type, string name, int quantity)
         {
-            AddCounterModifier(
-                modifiers,
-                ModifierType.Other,
-                string.IsNullOrWhiteSpace(product.ExtraName) ? "Extra" : product.ExtraName,
-                product.ExtraPrice,
-                selection.OtherIngredientCount);
+            if (quantity > 0)
+                modifiers.Add(new Modifier { Type = type, Name = name, UnitPrice = Price(code), Quantity = quantity });
         }
 
-        return new PricingResult
+        switch (product.ProductType)
         {
-            BasePrice = product.BasePrice,
-            VariantDescription = product.Name,
-            Modifiers = modifiers
-        };
-    }
-
-    private static PricingResult CalculatePapasSabritas(ProductSelection selection)
-    {
-        (decimal basePrice, string variant) = selection.SnackPreparation switch
-        {
-            SnackPreparation.PreparedAll => (65m, "Preparado con todos los ingredientes"),
-            SnackPreparation.MissingIngredient => (60m, "Preparado sin algún ingrediente"),
-            _ => (35m, "Normal")
-        };
-
-        var modifiers = new List<Modifier>();
-        AddCounterModifier(modifiers, ModifierType.ExtraIngredient, "Ingrediente extra", 10m, selection.ExtraIngredientCount);
-
-        return new PricingResult { BasePrice = basePrice, VariantDescription = variant, Modifiers = modifiers };
-    }
-
-    private static PricingResult CalculateFritura(ProductSelection selection)
-    {
-        var modifiers = new List<Modifier>();
-        AddCounterModifier(modifiers, ModifierType.ExtraIngredient, "Ingrediente extra", 10m, selection.ExtraIngredientCount);
-        return new PricingResult { BasePrice = 15m, VariantDescription = "Salsa incluida", Modifiers = modifiers };
-    }
-
-    private static PricingResult CalculateSopaPalomitas(ProductSelection selection)
-    {
-        var modifiers = new List<Modifier>();
-        AddCounterModifier(modifiers, ModifierType.ExtraIngredient, "Ingrediente extra", 10m, selection.ExtraIngredientCount);
-        return new PricingResult
-        {
-            BasePrice = selection.Cooked ? 35m : 30m,
-            VariantDescription = selection.Cooked ? "Cocinada" : "Normal",
-            Modifiers = modifiers
-        };
-    }
-
-    private static PricingResult CalculateBarquilloVaso(ProductSelection selection)
-    {
-        decimal basePrice = selection.IceCreamSize switch
-        {
-            IceCreamSize.Chico => 25m,
-            IceCreamSize.Mediano => 35m,
-            IceCreamSize.Grande => 45m,
-            IceCreamSize.Jumbo => 55m,
-            _ => throw new InvalidOperationException("Debe seleccionar un tamaño de helado.")
-        };
-
-        return new PricingResult
-        {
-            BasePrice = basePrice,
-            VariantDescription = SizeLabel(selection.IceCreamSize!.Value),
-            Modifiers = CreateIceCreamModifiers(selection)
-        };
-    }
-
-    private static PricingResult CalculateCanasta(ProductSelection selection)
-    {
-        decimal basePrice = selection.IceCreamSize switch
-        {
-            IceCreamSize.Doble => 45m,
-            IceCreamSize.Triple => 55m,
-            _ => throw new InvalidOperationException("Debe seleccionar canasta Doble o Triple.")
-        };
-
-        return new PricingResult
-        {
-            BasePrice = basePrice,
-            VariantDescription = SizeLabel(selection.IceCreamSize!.Value),
-            Modifiers = CreateIceCreamModifiers(selection)
-        };
-    }
-
-    private static PricingResult CalculateEnvase(ProductSelection selection)
-    {
-        decimal basePrice = selection.IceCreamSize switch
-        {
-            IceCreamSize.MedioLitro => 65m,
-            IceCreamSize.UnLitro => 110m,
-            IceCreamSize.CincoLitros => 450m,
-            IceCreamSize.DoceLitros => 850m,
-            _ => throw new InvalidOperationException("Debe seleccionar el tamaño del envase o bote.")
-        };
-
-        var modifiers = new List<Modifier>();
-        if (selection.IceCreamSize is IceCreamSize.MedioLitro or IceCreamSize.UnLitro)
-        {
-            AddCounterModifier(modifiers, ModifierType.ExtraIngredient, "Ingrediente de preparación", 10m, selection.PreparationExtraIngredientCount);
-        }
-
-        return new PricingResult
-        {
-            BasePrice = basePrice,
-            VariantDescription = SizeLabel(selection.IceCreamSize!.Value),
-            Modifiers = modifiers
-        };
-    }
-
-    private static PricingResult CalculateSpecialty(Product product, ProductSelection selection)
-    {
-        decimal basePrice = product.ProductType switch
-        {
-            ProductType.Malteada => 40m,
-            ProductType.Copa => 70m,
-            ProductType.BananaSplit => 70m,
-            ProductType.TresMarias => 70m,
-            _ => throw new NotSupportedException()
-        };
-
-        var modifiers = new List<Modifier>(2);
-        if (selection.Chantilly)
-        {
-            modifiers.Add(new Modifier { Type = ModifierType.Chantilly, Name = "Crema Chantilly", UnitPrice = 10m, Quantity = 1 });
-        }
-        AddCounterModifier(modifiers, ModifierType.Other, "Otro ingrediente", 5m, selection.OtherIngredientCount);
-
-        return new PricingResult { BasePrice = basePrice, VariantDescription = product.Name, Modifiers = modifiers };
-    }
-
-    private static List<Modifier> CreateIceCreamModifiers(ProductSelection selection)
-    {
-        var modifiers = new List<Modifier>(2);
-
-        switch (selection.IceCreamPreparation)
-        {
-            case IceCreamPreparation.SingleIngredient:
-                modifiers.Add(new Modifier { Type = ModifierType.Preparation, Name = "Preparación de 1 ingrediente", UnitPrice = 5m, Quantity = 1 });
+            case ProductType.Custom:
+                amount = product.BasePrice;
+                variant = product.Name;
+                if (product.AllowsExtras && selection.OtherIngredientCount > 0)
+                    modifiers.Add(new Modifier { Type = ModifierType.Other, Name = product.ExtraName ?? "Extra", UnitPrice = product.ExtraPrice, Quantity = selection.OtherIngredientCount });
                 break;
-            case IceCreamPreparation.ChocolateOrJamAndCereal:
-                modifiers.Add(new Modifier { Type = ModifierType.Preparation, Name = "Chocolate/mermelada + cereal", UnitPrice = 10m, Quantity = 1 });
+            case ProductType.PapasSabritas:
+                string snackCode = selection.SnackPreparation switch
+                {
+                    SnackPreparation.PreparedAll => "prepared",
+                    SnackPreparation.MissingIngredient => "missing",
+                    _ => "normal"
+                };
+                amount = Price(snackCode);
+                variant = product.Prices.FirstOrDefault(p => p.Code == snackCode)?.Label ?? snackCode;
+                Extra("snack_extra", ModifierType.ExtraIngredient, "Ingrediente extra", selection.ExtraIngredientCount);
+                break;
+            case ProductType.Fritura:
+            case ProductType.SopaPalomitas:
+                string code = product.ProductType == ProductType.SopaPalomitas && selection.Cooked ? "cooked" : "normal";
+                amount = Price(code);
+                variant = product.Prices.FirstOrDefault(p => p.Code == code)?.Label ?? code;
+                Extra("snack_extra", ModifierType.ExtraIngredient, "Ingrediente extra", selection.ExtraIngredientCount);
+                break;
+            case ProductType.Barquillo:
+            case ProductType.Vaso:
+            case ProductType.Canasta:
+                if (selection.IceCreamSize is null) throw new InvalidOperationException("Selecciona un tamaño.");
+                string size = selection.IceCreamSize.Value.ToString();
+                amount = Price(size);
+                variant = product.Prices.FirstOrDefault(p => p.Code == size)?.Label ?? size;
+                if (selection.IceCreamPreparation == IceCreamPreparation.SingleIngredient)
+                    Extra("ice_single", ModifierType.Preparation, "Preparación de un ingrediente", 1);
+                if (selection.IceCreamPreparation == IceCreamPreparation.ChocolateOrJamAndCereal)
+                    Extra("ice_combined", ModifierType.Preparation, "Chocolate o mermelada + cereal", 1);
+                Extra("scoop", ModifierType.ExtraScoop, "Bola extra", selection.ExtraScoops);
+                break;
+            case ProductType.Envase:
+                if (selection.IceCreamSize is null) throw new InvalidOperationException("Selecciona un tamaño.");
+                string container = selection.IceCreamSize.Value.ToString();
+                amount = Price(container);
+                variant = product.Prices.FirstOrDefault(p => p.Code == container)?.Label ?? container;
+                if (selection.IceCreamSize is IceCreamSize.MedioLitro or IceCreamSize.UnLitro)
+                    Extra("container_extra", ModifierType.ExtraIngredient, "Ingrediente de preparación", selection.PreparationExtraIngredientCount);
+                break;
+            default:
+                amount = Price("normal");
+                variant = product.Name;
+                if (selection.Chantilly) Extra("chantilly", ModifierType.Chantilly, "Crema Chantilly", 1);
+                Extra("special_extra", ModifierType.Other, "Otro ingrediente", selection.OtherIngredientCount);
                 break;
         }
 
-        AddCounterModifier(modifiers, ModifierType.ExtraScoop, "Bola extra", 20m, selection.ExtraScoops);
-        return modifiers;
+        return new PricingResult { BasePrice = amount, VariantDescription = variant, Modifiers = modifiers };
     }
-
-    private static void AddCounterModifier(ICollection<Modifier> modifiers, ModifierType type, string name, decimal price, int quantity)
-    {
-        if (quantity <= 0)
-            return;
-
-        modifiers.Add(new Modifier { Type = type, Name = name, UnitPrice = price, Quantity = quantity });
-    }
-
-    private static string SizeLabel(IceCreamSize size) => size switch
-    {
-        IceCreamSize.MedioLitro => "½ litro",
-        IceCreamSize.UnLitro => "1 litro",
-        IceCreamSize.CincoLitros => "Bote 5 litros",
-        IceCreamSize.DoceLitros => "Bote 12 litros",
-        _ => size.ToString()
-    };
 }

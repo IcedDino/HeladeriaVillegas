@@ -13,7 +13,7 @@ public partial class OrderItemViewModel : ObservableObject
 
     public OrderItem Model { get; }
     public string ProductName => Model.ProductName;
-    public string Variant => Model.SelectedVariant ?? string.Empty;
+    public string Variant => string.Join(" · ", new[] { Model.SelectedVariant, Model.Flavors, Model.Instructions }.Where(s => !string.IsNullOrWhiteSpace(s)));
     public decimal BaseUnitPrice => Model.BaseUnitPrice;
     public decimal ExtrasUnitTotal => Model.ExtrasUnitTotal;
     public decimal UnitPrice => BaseUnitPrice + ExtrasUnitTotal;

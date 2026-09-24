@@ -17,4 +17,5 @@ public sealed class Product
     public string? ExtraName { get; set; }
     public decimal ExtraPrice { get; set; }
     public bool IsActive { get; set; } = true;
+    public List<ProductPrice> Prices { get; set; } = [];
 }

@@ -7,6 +7,7 @@
     <OutputType Condition="'$(TargetFramework)' == 'net8.0-maccatalyst'">Exe</OutputType>
     <RootNamespace>HeladeriaPOS</RootNamespace>
     <UseMaui>true</UseMaui>
+    <MauiVersion>8.0.14</MauiVersion>
     <SingleProject>true</SingleProject>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -22,7 +23,7 @@
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <ApplicationManifest>Platforms\Windows\app.manifest</ApplicationManifest>
     <WindowsPackageType>None</WindowsPackageType>
-    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
     <Platforms>x64</Platforms>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <PublishTrimmed>false</PublishTrimmed>
@@ -34,6 +35,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Verification\**\*.cs" />
     <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#FFF7F9" />
     <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#FFF7F9" BaseSize="256,256" />
     <MauiImage Include="Resources\Images\*" />

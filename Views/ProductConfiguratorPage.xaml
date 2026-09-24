@@ -31,7 +31,7 @@
                     <Grid ColumnDefinitions="*,Auto" Padding="0,6">
                         <VerticalStackLayout>
                             <Label Text="Cocinadas" FontSize="18" FontAttributes="Bold" />
-                            <Label Text="Normal $30 · Cocinada $35" FontSize="13" TextColor="#777777" />
+                            <Label x:Name="CookedPriceText" Text="Normal $30 · Cocinada $35" FontSize="13" TextColor="#777777" />
                         </VerticalStackLayout>
                         <Switch x:Name="CookedSwitch" Grid.Column="1" Scale="1.35" VerticalOptions="Center" />
                     </Grid>
@@ -42,7 +42,7 @@
                     <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
                         <VerticalStackLayout VerticalOptions="Center">
                             <Label Text="+ Ingrediente extra" FontSize="17" FontAttributes="Bold" />
-                            <Label Text="$10 por unidad" FontSize="13" TextColor="#777777" />
+                            <Label x:Name="SnackExtraPriceText" Text="$10 por unidad" FontSize="13" TextColor="#777777" />
                         </VerticalStackLayout>
                         <Button Grid.Column="1" Text="−" Style="{StaticResource QuantityButtonStyle}" Clicked="SnackExtra_Clicked" />
                         <Border Grid.Column="2" BackgroundColor="#F2F3FF" Stroke="#E2E7FF" StrokeThickness="1" MinimumWidthRequest="58" HeightRequest="52">
@@ -76,7 +76,7 @@
                     <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8" Margin="0,8,0,0">
                         <VerticalStackLayout VerticalOptions="Center">
                             <Label Text="Bola extra de helado" FontSize="17" FontAttributes="Bold" />
-                            <Label Text="$20 por bola" FontSize="13" TextColor="#777777" />
+                            <Label x:Name="ScoopPriceText" Text="$20 por bola" FontSize="13" TextColor="#777777" />
                         </VerticalStackLayout>
                         <Button Grid.Column="1" Text="−" Style="{StaticResource QuantityButtonStyle}" Clicked="ExtraScoops_Clicked" />
                         <Border Grid.Column="2" BackgroundColor="#F2F3FF" Stroke="#E2E7FF" StrokeThickness="1" MinimumWidthRequest="58" HeightRequest="52">
@@ -97,7 +97,7 @@
                     <Grid x:Name="ContainerPreparationExtras" IsVisible="False" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8" Margin="0,8,0,0">
                         <VerticalStackLayout VerticalOptions="Center">
                             <Label Text="Ingredientes de preparación" FontSize="17" FontAttributes="Bold" />
-                            <Label Text="$10 por ingrediente (½ L y 1 L)" FontSize="13" TextColor="#777777" />
+                            <Label x:Name="ContainerExtraPriceText" Text="$10 por ingrediente (½ L y 1 L)" FontSize="13" TextColor="#777777" />
                         </VerticalStackLayout>
                         <Button Grid.Column="1" Text="−" Style="{StaticResource QuantityButtonStyle}" Clicked="ContainerIngredient_Clicked" />
                         <Border Grid.Column="2" BackgroundColor="#F2F3FF" Stroke="#E2E7FF" StrokeThickness="1" MinimumWidthRequest="58" HeightRequest="52">
@@ -112,12 +112,12 @@
                     <Label Text="Extras opcionales" FontSize="20" FontAttributes="Bold" />
                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" MinimumHeightRequest="48">
                         <CheckBox x:Name="ChantillyCheck" Scale="1.25" VerticalOptions="Center" />
-                        <Label Grid.Column="1" Text="Crema Chantilly — +$10" FontSize="18" VerticalTextAlignment="Center" />
+                        <Label x:Name="ChantillyPriceText" Grid.Column="1" Text="Crema Chantilly — +$10" FontSize="18" VerticalTextAlignment="Center" />
                     </Grid>
                     <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
                         <VerticalStackLayout VerticalOptions="Center">
                             <Label Text="Cualquier otro ingrediente" FontSize="17" FontAttributes="Bold" />
-                            <Label Text="$5 por unidad" FontSize="13" TextColor="#777777" />
+                            <Label x:Name="SpecialExtraPriceText" Text="$5 por unidad" FontSize="13" TextColor="#777777" />
                         </VerticalStackLayout>
                         <Button Grid.Column="1" Text="−" Style="{StaticResource QuantityButtonStyle}" Clicked="OtherIngredient_Clicked" />
                         <Border Grid.Column="2" BackgroundColor="#F2F3FF" Stroke="#E2E7FF" StrokeThickness="1" MinimumWidthRequest="58" HeightRequest="52">
@@ -143,16 +143,27 @@
                         <Button Grid.Column="3" Text="+" Style="{StaticResource QuantityButtonStyle}" Clicked="CustomExtra_Clicked" />
                     </Grid>
                 </VerticalStackLayout>
+                <VerticalStackLayout x:Name="FlavorSection" IsVisible="False" Spacing="8">
+                    <Label Text="Sabores e indicaciones" FontSize="20" FontAttributes="Bold" />
+                    <Label Text="Anota los sabores elegidos para preparar la orden." FontSize="14" />
+                    <Entry x:Name="FlavorsEntry" Placeholder="Selecciona sabores disponibles" Style="{StaticResource TouchEntryStyle}" MaxLength="300" IsReadOnly="True" />
+                    <FlexLayout x:Name="FlavorButtons" Wrap="Wrap" Direction="Row" JustifyContent="Start" AlignItems="Start" />
+                    <Button Text="Borrar sabores" Clicked="ClearFlavorsClicked" Style="{StaticResource QuickCashButtonStyle}" />
+                    <Entry x:Name="InstructionsEntry" Placeholder="Ej. sin nuez, poco jarabe" Style="{StaticResource TouchEntryStyle}" MaxLength="300" />
+                </VerticalStackLayout>
             </VerticalStackLayout>
         </ScrollView>
 
-        <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="12" MaximumWidthRequest="720" HorizontalOptions="Center" Margin="0,18,0,0">
+        <Grid Grid.Row="1" RowDefinitions="Auto,Auto" ColumnDefinitions="*,*" ColumnSpacing="12" RowSpacing="8" MaximumWidthRequest="720" HorizontalOptions="Center" Margin="0,12,0,0">
+            <Label x:Name="SelectedPriceText" Grid.ColumnSpan="2" Text="Total: $0" FontSize="22" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#147D5B" />
             <Button Text="Cancelar"
+                    Grid.Row="1"
                     Style="{StaticResource TouchButtonStyle}"
                     Clicked="Cancel_Clicked"
                     BackgroundColor="#EEEEEE"
                     TextColor="#444444" />
             <Button Grid.Column="1"
+                    Grid.Row="1"
                     Text="Agregar al ticket"
                     Style="{StaticResource TouchButtonStyle}"
                     Clicked="Add_Clicked"

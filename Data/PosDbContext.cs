@@ -10,6 +10,8 @@ public sealed class PosDbContext : DbContext
     public DbSet<Ticket> Tickets => Set<Ticket>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
     public DbSet<Modifier> Modifiers => Set<Modifier>();
+    public DbSet<ProductPrice> ProductPrices => Set<ProductPrice>();
+    public DbSet<Flavor> Flavors => Set<Flavor>();
 
     public PosDbContext(DbContextOptions<PosDbContext> options) : base(options)
     {
@@ -35,6 +37,22 @@ public sealed class PosDbContext : DbContext
             entity.Property(x => x.BasePrice).HasConversion(moneyConverter);
             entity.Property(x => x.ExtraPrice).HasConversion(moneyConverter);
             entity.HasIndex(x => new { x.Category, x.IsActive });
+            entity.HasMany(x => x.Prices).WithOne().HasForeignKey(x => x.ProductId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ProductPrice>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Code).HasMaxLength(60).IsRequired();
+            entity.Property(x => x.Label).HasMaxLength(100).IsRequired();
+            entity.Property(x => x.Amount).HasConversion(moneyConverter);
+            entity.HasIndex(x => new { x.ProductId, x.Code }).IsUnique();
+        });
+        modelBuilder.Entity<Flavor>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Name).HasMaxLength(80).IsRequired();
+            entity.HasIndex(x => x.Name).IsUnique();
         });
 
         modelBuilder.Entity<Ticket>(entity =>
@@ -49,6 +67,10 @@ public sealed class PosDbContext : DbContext
             entity.Property(x => x.Total).HasConversion(moneyConverter);
             entity.Property(x => x.Received).HasConversion(moneyConverter);
             entity.Property(x => x.Change).HasConversion(moneyConverter);
+            entity.Property(x => x.CardPaid).HasConversion(moneyConverter);
+            entity.Property(x => x.TransferPaid).HasConversion(moneyConverter);
+            entity.Property(x => x.DiscountReason).HasMaxLength(200);
+            entity.Property(x => x.CancellationReason).HasMaxLength(200);
             entity.HasMany(x => x.Items)
                   .WithOne()
                   .HasForeignKey(x => x.TicketId)
@@ -60,6 +82,8 @@ public sealed class PosDbContext : DbContext
             entity.HasKey(x => x.Id);
             entity.Property(x => x.ProductName).HasMaxLength(120).IsRequired();
             entity.Property(x => x.SelectedVariant).HasMaxLength(180);
+            entity.Property(x => x.Flavors).HasMaxLength(300);
+            entity.Property(x => x.Instructions).HasMaxLength(300);
             entity.Property(x => x.BaseUnitPrice).HasConversion(moneyConverter);
             entity.HasMany(x => x.Modifiers)
                   .WithOne()

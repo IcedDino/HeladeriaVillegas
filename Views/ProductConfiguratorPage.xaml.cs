@@ -13,11 +13,25 @@ public partial class ProductConfiguratorPage : ContentPage
     private int _containerIngredientCount;
     private int _otherIngredientCount;
 
-    public ProductConfiguratorPage(Product product)
+    public ProductConfiguratorPage(Product product, IReadOnlyList<Flavor> flavors)
     {
         InitializeComponent();
         _product = product;
         ConfigureForProduct();
+        foreach (Flavor flavor in flavors)
+        {
+            var button = new Button { Text = flavor.Name, Margin = new Thickness(0, 0, 8, 8), MinimumHeightRequest = 50 };
+            button.Clicked += FlavorQuickClicked;
+            FlavorButtons.Children.Add(button);
+        }
+        foreach (RadioButton radio in new[] { SnackNormalRadio, SnackPreparedRadio, SnackMissingRadio,
+            SizeSmallRadio, SizeMediumRadio, SizeLargeRadio, SizeJumboRadio, SizeDoubleRadio, SizeTripleRadio,
+            SizeHalfLiterRadio, SizeOneLiterRadio, SizeFiveLiterRadio, SizeTwelveLiterRadio,
+            PreparationNoneRadio, PreparationSingleRadio, PreparationCombinedRadio })
+            radio.CheckedChanged += (_, _) => UpdateSelectedPrice();
+        CookedSwitch.Toggled += (_, _) => UpdateSelectedPrice();
+        ChantillyCheck.CheckedChanged += (_, _) => UpdateSelectedPrice();
+        UpdateSelectedPrice();
     }
 
     public Task<ProductSelection?> WaitForResultAsync() => _result.Task;
@@ -25,6 +39,36 @@ public partial class ProductConfiguratorPage : ContentPage
     private void ConfigureForProduct()
     {
         ProductNameText.Text = _product.Name;
+        FlavorSection.IsVisible = _product.Category is ProductCategory.Helados or ProductCategory.Especialidades;
+        SetPrice(SnackNormalRadio, "normal", "Normal");
+        SetPrice(SnackPreparedRadio, "prepared", "Preparado completo");
+        SetPrice(SnackMissingRadio, "missing", "Preparado sin ingrediente");
+        SetPrice(SizeSmallRadio, "Chico", "Chico");
+        SetPrice(SizeMediumRadio, "Mediano", "Mediano");
+        SetPrice(SizeLargeRadio, "Grande", "Grande");
+        SetPrice(SizeJumboRadio, "Jumbo", "Jumbo");
+        SetPrice(SizeDoubleRadio, "Doble", "Doble");
+        SetPrice(SizeTripleRadio, "Triple", "Triple");
+        SetPrice(SizeHalfLiterRadio, "MedioLitro", "Medio litro");
+        SetPrice(SizeOneLiterRadio, "UnLitro", "1 litro");
+        SetPrice(SizeFiveLiterRadio, "CincoLitros", "5 litros");
+        SetPrice(SizeTwelveLiterRadio, "DoceLitros", "12 litros");
+        SetPrice(PreparationSingleRadio, "ice_single", "Un ingrediente");
+        SetPrice(PreparationCombinedRadio, "ice_combined", "Chocolate o mermelada + cereal");
+        string Money(string code) => Services.PriceCatalog.Get(_product, code).ToString("C", CultureInfo.GetCultureInfo("es-MX"));
+        if (_product.ProductType == ProductType.SopaPalomitas)
+            CookedPriceText.Text = $"Normal {Money("normal")} · Cocinada {Money("cooked")}";
+        if (_product.Category == ProductCategory.Snacks && _product.ProductType != ProductType.Custom)
+            SnackExtraPriceText.Text = $"{Money("snack_extra")} por unidad";
+        if (_product.ProductType is ProductType.Barquillo or ProductType.Vaso or ProductType.Canasta)
+            ScoopPriceText.Text = $"{Money("scoop")} por bola";
+        if (_product.ProductType == ProductType.Envase)
+            ContainerExtraPriceText.Text = $"{Money("container_extra")} por ingrediente (½ L y 1 L)";
+        if (_product.Category == ProductCategory.Especialidades && _product.ProductType != ProductType.Custom)
+        {
+            ChantillyPriceText.Text = $"Crema Chantilly — +{Money("chantilly")}";
+            SpecialExtraPriceText.Text = $"{Money("special_extra")} por unidad";
+        }
         BaseHintText.Text = _product.ProductType switch
         {
             ProductType.Custom => $"Precio base {_product.BasePrice.ToString("C", CultureInfo.GetCultureInfo("es-MX"))}.",
@@ -37,6 +81,8 @@ public partial class ProductConfiguratorPage : ContentPage
             ProductType.Malteada => "Malteada $40. Puedes agregar Chantilly u otros ingredientes.",
             _ => "Especialidad $70. Puedes agregar Chantilly u otros ingredientes."
         };
+        if (_product.ProductType != ProductType.Custom)
+            BaseHintText.Text = "Elige las opciones. El total se actualiza abajo con los precios vigentes.";
 
         bool isSnack = _product.Category == ProductCategory.Snacks;
         SnackExtrasSection.IsVisible = isSnack && _product.ProductType != ProductType.Custom;
@@ -87,6 +133,11 @@ public partial class ProductConfiguratorPage : ContentPage
             await DisplayAlert("Falta información", "Selecciona el tamaño antes de agregar el producto.", "Aceptar");
             return;
         }
+        if (FlavorSection.IsVisible && string.IsNullOrWhiteSpace(FlavorsEntry.Text))
+        {
+            await DisplayAlert("Faltan sabores", "Selecciona al menos un sabor disponible.", "Aceptar");
+            return;
+        }
 
         var selection = new ProductSelection
         {
@@ -98,7 +149,9 @@ public partial class ProductConfiguratorPage : ContentPage
             ExtraScoops = _extraScoopsCount,
             PreparationExtraIngredientCount = _containerIngredientCount,
             Chantilly = ChantillyCheck.IsChecked,
-            OtherIngredientCount = _otherIngredientCount
+            OtherIngredientCount = _otherIngredientCount,
+            Flavors = FlavorsEntry.Text?.Trim(),
+            Instructions = InstructionsEntry.Text?.Trim()
         };
 
         _completed = true;
@@ -151,30 +204,35 @@ public partial class ProductConfiguratorPage : ContentPage
     {
         _snackExtraCount = ChangeCounter(_snackExtraCount, sender, 20);
         SnackExtraValue.Text = _snackExtraCount.ToString();
+        UpdateSelectedPrice();
     }
 
     private void ExtraScoops_Clicked(object? sender, EventArgs e)
     {
         _extraScoopsCount = ChangeCounter(_extraScoopsCount, sender, 20);
         ExtraScoopsValue.Text = _extraScoopsCount.ToString();
+        UpdateSelectedPrice();
     }
 
     private void ContainerIngredient_Clicked(object? sender, EventArgs e)
     {
         _containerIngredientCount = ChangeCounter(_containerIngredientCount, sender, 20);
         ContainerIngredientValue.Text = _containerIngredientCount.ToString();
+        UpdateSelectedPrice();
     }
 
     private void OtherIngredient_Clicked(object? sender, EventArgs e)
     {
         _otherIngredientCount = ChangeCounter(_otherIngredientCount, sender, 30);
         OtherIngredientValue.Text = _otherIngredientCount.ToString();
+        UpdateSelectedPrice();
     }
 
     private void CustomExtra_Clicked(object? sender, EventArgs e)
     {
         _otherIngredientCount = ChangeCounter(_otherIngredientCount, sender, 30);
         CustomExtraValue.Text = _otherIngredientCount.ToString();
+        UpdateSelectedPrice();
     }
 
     private static int ChangeCounter(int current, object? sender, int maximum)
@@ -198,4 +256,43 @@ public partial class ProductConfiguratorPage : ContentPage
             ContainerIngredientValue.Text = "0";
         }
     }
+
+    private void SetPrice(RadioButton radio, string code, string label)
+    {
+        ProductPrice? price = _product.Prices.FirstOrDefault(p => p.Code == code);
+        if (price is not null)
+            radio.Content = $"{label} — {price.Amount.ToString("C", CultureInfo.GetCultureInfo("es-MX"))}";
+    }
+
+    private ProductSelection CurrentSelection() => new()
+    {
+        SnackPreparation = ReadSnackPreparation(), Cooked = CookedSwitch.IsToggled,
+        ExtraIngredientCount = _snackExtraCount, IceCreamSize = ReadSelectedSize(),
+        IceCreamPreparation = ReadIceCreamPreparation(), ExtraScoops = _extraScoopsCount,
+        PreparationExtraIngredientCount = _containerIngredientCount,
+        Chantilly = ChantillyCheck.IsChecked, OtherIngredientCount = _otherIngredientCount
+    };
+
+    private void UpdateSelectedPrice()
+    {
+        try
+        {
+            PricingResult price = new Services.PricingService().Calculate(_product, CurrentSelection());
+            decimal total = price.BasePrice + price.Modifiers.Sum(m => m.Total);
+            SelectedPriceText.Text = $"Total por unidad: {total.ToString("C", CultureInfo.GetCultureInfo("es-MX"))}";
+        }
+        catch (InvalidOperationException)
+        {
+            SelectedPriceText.Text = "Selecciona un tamaño para ver el total";
+        }
+    }
+
+    private void FlavorQuickClicked(object? sender, EventArgs e)
+    {
+        if (sender is not Button button) return;
+        string current = FlavorsEntry.Text?.Trim() ?? string.Empty;
+        FlavorsEntry.Text = current.Length == 0 ? button.Text : current + ", " + button.Text;
+    }
+
+    private void ClearFlavorsClicked(object? sender, EventArgs e) => FlavorsEntry.Text = string.Empty;
 }
