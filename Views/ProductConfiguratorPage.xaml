@@ -4,171 +4,307 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     Title="Configurar producto"
-    BackgroundColor="#FAF8FF">
+    BackgroundColor="{StaticResource PageBackground}">
 
-    <Grid RowDefinitions="*,Auto" Padding="22">
-        <ScrollView Grid.Row="0">
-            <VerticalStackLayout Spacing="18" MaximumWidthRequest="720" HorizontalOptions="Center">
-                <Border BackgroundColor="#F2F3FF" Stroke="#E2E7FF" StrokeThickness="1" Padding="16">
-                    <Border.StrokeShape>
-                        <RoundRectangle CornerRadius="14" />
-                    </Border.StrokeShape>
-                    <VerticalStackLayout Spacing="5">
-                        <Label x:Name="ProductNameText" FontSize="26" FontAttributes="Bold" TextColor="#B80035" />
-                        <Label x:Name="BaseHintText" FontSize="15" TextColor="#666666" LineBreakMode="WordWrap" />
+    <ContentPage.Resources>
+        <Style x:Key="SectionCard" TargetType="Border">
+            <Setter Property="BackgroundColor" Value="White" />
+            <Setter Property="Stroke" Value="{StaticResource SoftBorder}" />
+            <Setter Property="StrokeThickness" Value="1" />
+            <Setter Property="Padding" Value="18" />
+            <Setter Property="StrokeShape">
+                <Setter.Value><RoundRectangle CornerRadius="20" /></Setter.Value>
+            </Setter>
+            <Setter Property="Shadow">
+                <Setter.Value>
+                    <Shadow Brush="#140F0710" Offset="0,3" Radius="10" Opacity="0.5" />
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SectionTitle" TargetType="Label">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontAttributes" Value="Bold" />
+            <Setter Property="CharacterSpacing" Value="1.1" />
+            <Setter Property="TextColor" Value="{StaticResource BrandDarkRed}" />
+            <Setter Property="TextTransform" Value="Uppercase" />
+        </Style>
+
+        <Style x:Key="OptionTitle" TargetType="Label">
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="FontAttributes" Value="Bold" />
+            <Setter Property="TextColor" Value="{StaticResource TextPrimary}" />
+        </Style>
+
+        <Style x:Key="OptionHint" TargetType="Label">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="TextColor" Value="{StaticResource TextSecondary}" />
+        </Style>
+
+        <Style x:Key="ChipStyle" TargetType="Button">
+            <Setter Property="MinimumHeightRequest" Value="54" />
+            <Setter Property="Padding" Value="18,10" />
+            <Setter Property="CornerRadius" Value="14" />
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="FontAttributes" Value="Bold" />
+            <Setter Property="BackgroundColor" Value="White" />
+            <Setter Property="TextColor" Value="{StaticResource TextPrimary}" />
+            <Setter Property="BorderColor" Value="#E7C6D2" />
+            <Setter Property="BorderWidth" Value="1.5" />
+            <Setter Property="Shadow">
+                <Setter.Value>
+                    <Shadow Brush="#14000000" Offset="0,2" Radius="5" Opacity="0.5" />
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="StepButton" TargetType="Button">
+            <Setter Property="WidthRequest" Value="62" />
+            <Setter Property="HeightRequest" Value="62" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="CornerRadius" Value="18" />
+            <Setter Property="FontSize" Value="28" />
+            <Setter Property="FontAttributes" Value="Bold" />
+            <Setter Property="BackgroundColor" Value="#FFF9FB" />
+            <Setter Property="TextColor" Value="{StaticResource BrandDarkRed}" />
+            <Setter Property="BorderColor" Value="#E7C6D2" />
+            <Setter Property="BorderWidth" Value="1.5" />
+            <Setter Property="Shadow">
+                <Setter.Value>
+                    <Shadow Brush="#180F0710" Offset="0,2" Radius="5" Opacity="0.5" />
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="CountPill" TargetType="Border">
+            <Setter Property="BackgroundColor" Value="#F7EDF1" />
+            <Setter Property="StrokeThickness" Value="0" />
+            <Setter Property="MinimumWidthRequest" Value="68" />
+            <Setter Property="HeightRequest" Value="62" />
+            <Setter Property="StrokeShape">
+                <Setter.Value><RoundRectangle CornerRadius="16" /></Setter.Value>
+            </Setter>
+        </Style>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,*,Auto" RowSpacing="14" Padding="22,18">
+        <!-- Header -->
+        <Border Padding="18" BackgroundColor="#FFFFFF" Stroke="{StaticResource SoftBorder}" StrokeThickness="1">
+            <Border.StrokeShape><RoundRectangle CornerRadius="20" /></Border.StrokeShape>
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
+                <Border x:Name="ProductImageFrame" WidthRequest="96" HeightRequest="96" BackgroundColor="#F7EDF1"
+                        Stroke="{StaticResource SoftBorder}" StrokeThickness="1" StrokeShape="RoundRectangle 18">
+                    <Image x:Name="ProductImage" Aspect="AspectFill" />
+                </Border>
+                <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
+                    <Label x:Name="ProductNameText" FontSize="25" FontAttributes="Bold" TextColor="{StaticResource BrandRed}" LineBreakMode="TailTruncation" MaxLines="1" />
+                    <Label x:Name="BaseHintText" FontSize="13" TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" />
+                </VerticalStackLayout>
+            </Grid>
+        </Border>
+
+        <!-- Options -->
+        <ScrollView Grid.Row="1" VerticalScrollBarVisibility="Never">
+            <VerticalStackLayout Spacing="14" MaximumWidthRequest="720" HorizontalOptions="Fill">
+                <!-- Papas / Sabritas: preparation -->
+                <Border x:Name="SnackPreparationSection" IsVisible="False" Style="{StaticResource SectionCard}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Preparación" Style="{StaticResource SectionTitle}" />
+                        <FlexLayout Wrap="Wrap" Direction="Row" JustifyContent="Start" AlignItems="Start">
+                            <Button x:Name="SnackNormalChip" Text="Normal" AutomationId="SnackPreparation|normal" Style="{StaticResource ChipStyle}" Margin="0,0,8,8" />
+                            <Button x:Name="SnackPreparedChip" Text="Preparado completo" AutomationId="SnackPreparation|prepared" Style="{StaticResource ChipStyle}" Margin="0,0,8,8" />
+                            <Button x:Name="SnackMissingChip" Text="Sin algún ingrediente" AutomationId="SnackPreparation|missing" Style="{StaticResource ChipStyle}" Margin="0,0,8,8" />
+                        </FlexLayout>
                     </VerticalStackLayout>
                 </Border>
 
-                <VerticalStackLayout x:Name="SnackPreparationSection" IsVisible="False" Spacing="8">
-                    <Label Text="Preparación" FontSize="20" FontAttributes="Bold" />
-                    <RadioButton x:Name="SnackNormalRadio" GroupName="SnackPreparation" Content="Normal — $35" IsChecked="True" Style="{StaticResource TouchRadioStyle}" />
-                    <RadioButton x:Name="SnackPreparedRadio" GroupName="SnackPreparation" Content="Preparado con todos los ingredientes — $65" Style="{StaticResource TouchRadioStyle}" />
-                    <RadioButton x:Name="SnackMissingRadio" GroupName="SnackPreparation" Content="Sin algún ingrediente — $60" Style="{StaticResource TouchRadioStyle}" />
-                </VerticalStackLayout>
+                <!-- Sopa / Palomitas: cocinadas -->
+                <Border x:Name="CookedSection" IsVisible="False" Style="{StaticResource SectionCard}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Preparación" Style="{StaticResource SectionTitle}" />
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                            <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                                <Label Text="Cocinadas" Style="{StaticResource OptionTitle}" />
+                                <Label x:Name="CookedPriceText" Style="{StaticResource OptionHint}" />
+                            </VerticalStackLayout>
+                            <Border Grid.Column="1" BackgroundColor="#F7EDF1" Padding="6,4" StrokeThickness="0" StrokeShape="RoundRectangle 16" VerticalOptions="Center">
+                                <Switch x:Name="CookedSwitch" Scale="1.4" />
+                            </Border>
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
 
-                <VerticalStackLayout x:Name="CookedSection" IsVisible="False" Spacing="9">
-                    <Label Text="Preparación" FontSize="20" FontAttributes="Bold" />
-                    <Grid ColumnDefinitions="*,Auto" Padding="0,6">
-                        <VerticalStackLayout>
-                            <Label Text="Cocinadas" FontSize="18" FontAttributes="Bold" />
-                            <Label x:Name="CookedPriceText" Text="Normal $30 · Cocinada $35" FontSize="13" TextColor="#777777" />
-                        </VerticalStackLayout>
-                        <Switch x:Name="CookedSwitch" Grid.Column="1" Scale="1.35" VerticalOptions="Center" />
-                    </Grid>
-                </VerticalStackLayout>
+                <!-- Snacks: ingrediente extra -->
+                <Border x:Name="SnackExtrasSection" IsVisible="False" Style="{StaticResource SectionCard}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Ingredientes extra" Style="{StaticResource SectionTitle}" />
+                        <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="10">
+                            <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                                <Label Text="+ Ingrediente extra" Style="{StaticResource OptionTitle}" />
+                                <Label x:Name="SnackExtraPriceText" Style="{StaticResource OptionHint}" />
+                            </VerticalStackLayout>
+                            <Button Grid.Column="1" Text="−" Style="{StaticResource StepButton}" Clicked="SnackExtra_Clicked" />
+                            <Border Grid.Column="2" Style="{StaticResource CountPill}">
+                                <Label x:Name="SnackExtraValue" Text="0" FontSize="22" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                            </Border>
+                            <Button Grid.Column="3" Text="+" Style="{StaticResource StepButton}" Clicked="SnackExtra_Clicked" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
 
-                <VerticalStackLayout x:Name="SnackExtrasSection" IsVisible="False" Spacing="8">
-                    <Label Text="Ingredientes extra" FontSize="20" FontAttributes="Bold" />
-                    <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
-                        <VerticalStackLayout VerticalOptions="Center">
-                            <Label Text="+ Ingrediente extra" FontSize="17" FontAttributes="Bold" />
-                            <Label x:Name="SnackExtraPriceText" Text="$10 por unidad" FontSize="13" TextColor="#777777" />
-                        </VerticalStackLayout>
-                        <Button Grid.Column="1" Text="−" Style="{StaticResource QuantityButtonStyle}" Clicked="SnackExtra_Clicked" />
-                        <Border Grid.Column="2" BackgroundColor="#F2F3FF" Stroke="#E2E7FF" StrokeThickness="1" MinimumWidthRequest="58" HeightRequest="52">
-                            <Border.StrokeShape><RoundRectangle CornerRadius="12" /></Border.StrokeShape>
-                            <Label x:Name="SnackExtraValue" Text="0" FontSize="20" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                <!-- Barquillo / Vaso: tamaño -->
+                <Border x:Name="CupSizeSection" IsVisible="False" Style="{StaticResource SectionCard}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Tamaño obligatorio" Style="{StaticResource SectionTitle}" />
+                        <FlexLayout Wrap="Wrap" Direction="Row" JustifyContent="Start" AlignItems="Start">
+                            <Button x:Name="SizeSmallChip" Text="Chico" AutomationId="IceCreamSize|Chico" Style="{StaticResource ChipStyle}" Margin="0,0,8,8" />
+                            <Button x:Name="SizeMediumChip" Text="Mediano" AutomationId="IceCreamSize|Mediano" Style="{StaticResource ChipStyle}" Margin="0,0,8,8" />
+                            <Button x:Name="SizeLargeChip" Text="Grande" AutomationId="IceCreamSize|Grande" Style="{StaticResource ChipStyle}" Margin="0,0,8,8" />
+                            <Button x:Name="SizeJumboChip" Text="Jumbo" AutomationId="IceCreamSize|Jumbo" Style="{StaticResource ChipStyle}" Margin="0,0,8,8" />
+                        </FlexLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Canasta: tamaño -->
+                <Border x:Name="BasketSizeSection" IsVisible="False" Style="{StaticResource SectionCard}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Tamaño obligatorio" Style="{StaticResource SectionTitle}" />
+                        <FlexLayout Wrap="Wrap" Direction="Row" JustifyContent="Start" AlignItems="Start">
+                            <Button x:Name="SizeDoubleChip" Text="Doble" AutomationId="IceCreamSize|Doble" Style="{StaticResource ChipStyle}" Margin="0,0,8,8" />
+                            <Button x:Name="SizeTripleChip" Text="Triple" AutomationId="IceCreamSize|Triple" Style="{StaticResource ChipStyle}" Margin="0,0,8,8" />
+                        </FlexLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Helado: preparación + bolas extra -->
+                <Border x:Name="IceCreamModifiersSection" IsVisible="False" Style="{StaticResource SectionCard}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Preparación del helado" Style="{StaticResource SectionTitle}" />
+                        <FlexLayout Wrap="Wrap" Direction="Row" JustifyContent="Start" AlignItems="Start">
+                            <Button x:Name="PrepNoneChip" Text="Sin preparación extra" AutomationId="IceCreamPreparation|None" Style="{StaticResource ChipStyle}" Margin="0,0,8,8" />
+                            <Button x:Name="PrepSingleChip" Text="Un solo ingrediente" AutomationId="IceCreamPreparation|SingleIngredient" Style="{StaticResource ChipStyle}" Margin="0,0,8,8" />
+                            <Button x:Name="PrepCombinedChip" Text="Chocolate o mermelada + cereal" AutomationId="IceCreamPreparation|ChocolateOrJamAndCereal" Style="{StaticResource ChipStyle}" Margin="0,0,8,8" />
+                        </FlexLayout>
+
+                        <BoxView HeightRequest="1" Color="#F3E1E8" />
+
+                        <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="10">
+                            <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                                <Label Text="Bola extra de helado" Style="{StaticResource OptionTitle}" />
+                                <Label x:Name="ScoopPriceText" Style="{StaticResource OptionHint}" />
+                            </VerticalStackLayout>
+                            <Button Grid.Column="1" Text="−" Style="{StaticResource StepButton}" Clicked="ExtraScoops_Clicked" />
+                            <Border Grid.Column="2" Style="{StaticResource CountPill}">
+                                <Label x:Name="ExtraScoopsValue" Text="0" FontSize="22" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                            </Border>
+                            <Button Grid.Column="3" Text="+" Style="{StaticResource StepButton}" Clicked="ExtraScoops_Clicked" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Envase / Bote: tamaño + ingredientes -->
+                <Border x:Name="ContainerSizeSection" IsVisible="False" Style="{StaticResource SectionCard}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Tamaño obligatorio" Style="{StaticResource SectionTitle}" />
+                        <FlexLayout Wrap="Wrap" Direction="Row" JustifyContent="Start" AlignItems="Start">
+                            <Button x:Name="SizeHalfLiterChip" Text="Medio litro" AutomationId="IceCreamSize|MedioLitro" Style="{StaticResource ChipStyle}" Margin="0,0,8,8" />
+                            <Button x:Name="SizeOneLiterChip" Text="1 litro" AutomationId="IceCreamSize|UnLitro" Style="{StaticResource ChipStyle}" Margin="0,0,8,8" />
+                            <Button x:Name="SizeFiveLiterChip" Text="Bote 5 lts" AutomationId="IceCreamSize|CincoLitros" Style="{StaticResource ChipStyle}" Margin="0,0,8,8" />
+                            <Button x:Name="SizeTwelveLiterChip" Text="Bote 12 lts" AutomationId="IceCreamSize|DoceLitros" Style="{StaticResource ChipStyle}" Margin="0,0,8,8" />
+                        </FlexLayout>
+
+                        <Grid x:Name="ContainerPreparationExtras" IsVisible="False" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="10">
+                            <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                                <Label Text="Ingredientes de preparación" Style="{StaticResource OptionTitle}" />
+                                <Label x:Name="ContainerExtraPriceText" Style="{StaticResource OptionHint}" />
+                            </VerticalStackLayout>
+                            <Button Grid.Column="1" Text="−" Style="{StaticResource StepButton}" Clicked="ContainerIngredient_Clicked" />
+                            <Border Grid.Column="2" Style="{StaticResource CountPill}">
+                                <Label x:Name="ContainerIngredientValue" Text="0" FontSize="22" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                            </Border>
+                            <Button Grid.Column="3" Text="+" Style="{StaticResource StepButton}" Clicked="ContainerIngredient_Clicked" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Especialidades: chantilly + otros ingredientes -->
+                <Border x:Name="SpecialtySection" IsVisible="False" Style="{StaticResource SectionCard}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Extras opcionales" Style="{StaticResource SectionTitle}" />
+                        <Grid x:Name="ChantillyRow" ColumnDefinitions="Auto,*" ColumnSpacing="14" MinimumHeightRequest="60" Padding="2,4">
+                            <Grid.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="ChantillyRowTapped" />
+                            </Grid.GestureRecognizers>
+                            <CheckBox x:Name="ChantillyCheck" Scale="1.45" VerticalOptions="Center" />
+                            <Label x:Name="ChantillyPriceText" Grid.Column="1" Style="{StaticResource OptionTitle}" VerticalTextAlignment="Center" />
+                        </Grid>
+
+                        <BoxView HeightRequest="1" Color="#F3E1E8" />
+
+                        <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="10">
+                            <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                                <Label Text="Cualquier otro ingrediente" Style="{StaticResource OptionTitle}" />
+                                <Label x:Name="SpecialExtraPriceText" Style="{StaticResource OptionHint}" />
+                            </VerticalStackLayout>
+                            <Button Grid.Column="1" Text="−" Style="{StaticResource StepButton}" Clicked="OtherIngredient_Clicked" />
+                            <Border Grid.Column="2" Style="{StaticResource CountPill}">
+                                <Label x:Name="OtherIngredientValue" Text="0" FontSize="22" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                            </Border>
+                            <Button Grid.Column="3" Text="+" Style="{StaticResource StepButton}" Clicked="OtherIngredient_Clicked" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Producto custom: extra configurable -->
+                <Border x:Name="CustomExtrasSection" IsVisible="False" Style="{StaticResource SectionCard}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Extras opcionales" Style="{StaticResource SectionTitle}" />
+                        <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="10">
+                            <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                                <Label x:Name="CustomExtraNameText" Text="Extra" Style="{StaticResource OptionTitle}" />
+                                <Label x:Name="CustomExtraPriceText" Style="{StaticResource OptionHint}" />
+                            </VerticalStackLayout>
+                            <Button Grid.Column="1" Text="−" Style="{StaticResource StepButton}" Clicked="CustomExtra_Clicked" />
+                            <Border Grid.Column="2" Style="{StaticResource CountPill}">
+                                <Label x:Name="CustomExtraValue" Text="0" FontSize="22" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                            </Border>
+                            <Button Grid.Column="3" Text="+" Style="{StaticResource StepButton}" Clicked="CustomExtra_Clicked" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Helados y especialidades: sabores + indicaciones -->
+                <Border x:Name="FlavorSection" IsVisible="False" Style="{StaticResource SectionCard}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Sabores" Style="{StaticResource SectionTitle}" />
+                        <Label Text="Toca los sabores disponibles para elegirlos. Toca de nuevo para quitarlos." Style="{StaticResource OptionHint}" />
+                        <FlexLayout x:Name="FlavorChips" Wrap="Wrap" Direction="Row" JustifyContent="Start" AlignItems="Start" />
+
+                        <Border BackgroundColor="#F7EDF1" StrokeThickness="0" StrokeShape="RoundRectangle 14" Padding="12,10">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                <Label x:Name="FlavorSummaryText" Text="Ningún sabor elegido todavía." FontSize="15" TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" VerticalTextAlignment="Center" />
+                                <Button Grid.Column="1" Text="Borrar" Clicked="ClearFlavorsClicked" HeightRequest="48" CornerRadius="12" Padding="14,0"
+                                        FontSize="14" FontAttributes="Bold" BackgroundColor="#FFDAD6" TextColor="#93000A" VerticalOptions="Center" />
+                            </Grid>
                         </Border>
-                        <Button Grid.Column="3" Text="+" Style="{StaticResource QuantityButtonStyle}" Clicked="SnackExtra_Clicked" />
-                    </Grid>
-                </VerticalStackLayout>
-
-                <VerticalStackLayout x:Name="CupSizeSection" IsVisible="False" Spacing="8">
-                    <Label Text="Tamaño obligatorio" FontSize="20" FontAttributes="Bold" />
-                    <RadioButton x:Name="SizeSmallRadio" GroupName="IceCreamSize" Content="Chico — $25" Style="{StaticResource TouchRadioStyle}" />
-                    <RadioButton x:Name="SizeMediumRadio" GroupName="IceCreamSize" Content="Mediano — $35" Style="{StaticResource TouchRadioStyle}" />
-                    <RadioButton x:Name="SizeLargeRadio" GroupName="IceCreamSize" Content="Grande — $45" Style="{StaticResource TouchRadioStyle}" />
-                    <RadioButton x:Name="SizeJumboRadio" GroupName="IceCreamSize" Content="Jumbo — $55" Style="{StaticResource TouchRadioStyle}" />
-                </VerticalStackLayout>
-
-                <VerticalStackLayout x:Name="BasketSizeSection" IsVisible="False" Spacing="8">
-                    <Label Text="Tamaño obligatorio" FontSize="20" FontAttributes="Bold" />
-                    <RadioButton x:Name="SizeDoubleRadio" GroupName="IceCreamSize" Content="Doble — $45" Style="{StaticResource TouchRadioStyle}" />
-                    <RadioButton x:Name="SizeTripleRadio" GroupName="IceCreamSize" Content="Triple — $55" Style="{StaticResource TouchRadioStyle}" />
-                </VerticalStackLayout>
-
-                <VerticalStackLayout x:Name="IceCreamModifiersSection" IsVisible="False" Spacing="8">
-                    <Label Text="Preparación del helado" FontSize="20" FontAttributes="Bold" />
-                    <RadioButton x:Name="PreparationNoneRadio" GroupName="IceCreamPreparation" Content="Sin preparación extra" IsChecked="True" Style="{StaticResource TouchRadioStyle}" />
-                    <RadioButton x:Name="PreparationSingleRadio" GroupName="IceCreamPreparation" Content="Un solo ingrediente — +$5" Style="{StaticResource TouchRadioStyle}" />
-                    <RadioButton x:Name="PreparationCombinedRadio" GroupName="IceCreamPreparation" Content="Chocolate o mermelada + cereal — +$10" Style="{StaticResource TouchRadioStyle}" />
-
-                    <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8" Margin="0,8,0,0">
-                        <VerticalStackLayout VerticalOptions="Center">
-                            <Label Text="Bola extra de helado" FontSize="17" FontAttributes="Bold" />
-                            <Label x:Name="ScoopPriceText" Text="$20 por bola" FontSize="13" TextColor="#777777" />
-                        </VerticalStackLayout>
-                        <Button Grid.Column="1" Text="−" Style="{StaticResource QuantityButtonStyle}" Clicked="ExtraScoops_Clicked" />
-                        <Border Grid.Column="2" BackgroundColor="#F2F3FF" Stroke="#E2E7FF" StrokeThickness="1" MinimumWidthRequest="58" HeightRequest="52">
-                            <Border.StrokeShape><RoundRectangle CornerRadius="12" /></Border.StrokeShape>
-                            <Label x:Name="ExtraScoopsValue" Text="0" FontSize="20" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
-                        </Border>
-                        <Button Grid.Column="3" Text="+" Style="{StaticResource QuantityButtonStyle}" Clicked="ExtraScoops_Clicked" />
-                    </Grid>
-                </VerticalStackLayout>
-
-                <VerticalStackLayout x:Name="ContainerSizeSection" IsVisible="False" Spacing="8">
-                    <Label Text="Tamaño obligatorio" FontSize="20" FontAttributes="Bold" />
-                    <RadioButton x:Name="SizeHalfLiterRadio" GroupName="IceCreamSize" Content="Medio litro — $65" Style="{StaticResource TouchRadioStyle}" CheckedChanged="ContainerSize_CheckedChanged" />
-                    <RadioButton x:Name="SizeOneLiterRadio" GroupName="IceCreamSize" Content="1 litro — $110" Style="{StaticResource TouchRadioStyle}" CheckedChanged="ContainerSize_CheckedChanged" />
-                    <RadioButton x:Name="SizeFiveLiterRadio" GroupName="IceCreamSize" Content="Bote 5 litros — $450" Style="{StaticResource TouchRadioStyle}" CheckedChanged="ContainerSize_CheckedChanged" />
-                    <RadioButton x:Name="SizeTwelveLiterRadio" GroupName="IceCreamSize" Content="Bote 12 litros — $850" Style="{StaticResource TouchRadioStyle}" CheckedChanged="ContainerSize_CheckedChanged" />
-
-                    <Grid x:Name="ContainerPreparationExtras" IsVisible="False" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8" Margin="0,8,0,0">
-                        <VerticalStackLayout VerticalOptions="Center">
-                            <Label Text="Ingredientes de preparación" FontSize="17" FontAttributes="Bold" />
-                            <Label x:Name="ContainerExtraPriceText" Text="$10 por ingrediente (½ L y 1 L)" FontSize="13" TextColor="#777777" />
-                        </VerticalStackLayout>
-                        <Button Grid.Column="1" Text="−" Style="{StaticResource QuantityButtonStyle}" Clicked="ContainerIngredient_Clicked" />
-                        <Border Grid.Column="2" BackgroundColor="#F2F3FF" Stroke="#E2E7FF" StrokeThickness="1" MinimumWidthRequest="58" HeightRequest="52">
-                            <Border.StrokeShape><RoundRectangle CornerRadius="12" /></Border.StrokeShape>
-                            <Label x:Name="ContainerIngredientValue" Text="0" FontSize="20" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
-                        </Border>
-                        <Button Grid.Column="3" Text="+" Style="{StaticResource QuantityButtonStyle}" Clicked="ContainerIngredient_Clicked" />
-                    </Grid>
-                </VerticalStackLayout>
-
-                <VerticalStackLayout x:Name="SpecialtySection" IsVisible="False" Spacing="10">
-                    <Label Text="Extras opcionales" FontSize="20" FontAttributes="Bold" />
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" MinimumHeightRequest="48">
-                        <CheckBox x:Name="ChantillyCheck" Scale="1.25" VerticalOptions="Center" />
-                        <Label x:Name="ChantillyPriceText" Grid.Column="1" Text="Crema Chantilly — +$10" FontSize="18" VerticalTextAlignment="Center" />
-                    </Grid>
-                    <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
-                        <VerticalStackLayout VerticalOptions="Center">
-                            <Label Text="Cualquier otro ingrediente" FontSize="17" FontAttributes="Bold" />
-                            <Label x:Name="SpecialExtraPriceText" Text="$5 por unidad" FontSize="13" TextColor="#777777" />
-                        </VerticalStackLayout>
-                        <Button Grid.Column="1" Text="−" Style="{StaticResource QuantityButtonStyle}" Clicked="OtherIngredient_Clicked" />
-                        <Border Grid.Column="2" BackgroundColor="#F2F3FF" Stroke="#E2E7FF" StrokeThickness="1" MinimumWidthRequest="58" HeightRequest="52">
-                            <Border.StrokeShape><RoundRectangle CornerRadius="12" /></Border.StrokeShape>
-                            <Label x:Name="OtherIngredientValue" Text="0" FontSize="20" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
-                        </Border>
-                        <Button Grid.Column="3" Text="+" Style="{StaticResource QuantityButtonStyle}" Clicked="OtherIngredient_Clicked" />
-                    </Grid>
-                </VerticalStackLayout>
-
-                <VerticalStackLayout x:Name="CustomExtrasSection" IsVisible="False" Spacing="10">
-                    <Label Text="Extras opcionales" FontSize="20" FontAttributes="Bold" />
-                    <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
-                        <VerticalStackLayout VerticalOptions="Center">
-                            <Label x:Name="CustomExtraNameText" Text="Extra" FontSize="17" FontAttributes="Bold" />
-                            <Label x:Name="CustomExtraPriceText" FontSize="13" TextColor="#777777" />
-                        </VerticalStackLayout>
-                        <Button Grid.Column="1" Text="−" Style="{StaticResource QuantityButtonStyle}" Clicked="CustomExtra_Clicked" />
-                        <Border Grid.Column="2" BackgroundColor="#F2F3FF" Stroke="#E2E7FF" StrokeThickness="1" MinimumWidthRequest="58" HeightRequest="52">
-                            <Border.StrokeShape><RoundRectangle CornerRadius="12" /></Border.StrokeShape>
-                            <Label x:Name="CustomExtraValue" Text="0" FontSize="20" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
-                        </Border>
-                        <Button Grid.Column="3" Text="+" Style="{StaticResource QuantityButtonStyle}" Clicked="CustomExtra_Clicked" />
-                    </Grid>
-                </VerticalStackLayout>
-                <VerticalStackLayout x:Name="FlavorSection" IsVisible="False" Spacing="8">
-                    <Label Text="Sabores e indicaciones" FontSize="20" FontAttributes="Bold" />
-                    <Label Text="Anota los sabores elegidos para preparar la orden." FontSize="14" />
-                    <Entry x:Name="FlavorsEntry" Placeholder="Selecciona sabores disponibles" Style="{StaticResource TouchEntryStyle}" MaxLength="300" IsReadOnly="True" />
-                    <FlexLayout x:Name="FlavorButtons" Wrap="Wrap" Direction="Row" JustifyContent="Start" AlignItems="Start" />
-                    <Button Text="Borrar sabores" Clicked="ClearFlavorsClicked" Style="{StaticResource QuickCashButtonStyle}" />
-                    <Entry x:Name="InstructionsEntry" Placeholder="Ej. sin nuez, poco jarabe" Style="{StaticResource TouchEntryStyle}" MaxLength="300" />
-                </VerticalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
             </VerticalStackLayout>
         </ScrollView>
 
-        <Grid Grid.Row="1" RowDefinitions="Auto,Auto" ColumnDefinitions="*,*" ColumnSpacing="12" RowSpacing="8" MaximumWidthRequest="720" HorizontalOptions="Center" Margin="0,12,0,0">
-            <Label x:Name="SelectedPriceText" Grid.ColumnSpan="2" Text="Total: $0" FontSize="22" FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#147D5B" />
-            <Button Text="Cancelar"
-                    Grid.Row="1"
-                    Style="{StaticResource TouchButtonStyle}"
-                    Clicked="Cancel_Clicked"
-                    BackgroundColor="#EEEEEE"
-                    TextColor="#444444" />
-            <Button Grid.Column="1"
-                    Grid.Row="1"
-                    Text="Agregar al ticket"
-                    Style="{StaticResource TouchButtonStyle}"
-                    Clicked="Add_Clicked"
-                    BackgroundColor="{StaticResource CheckoutGreen}"
-                    TextColor="White" />
-        </Grid>
+        <!-- Footer -->
+        <Border Grid.Row="2" Padding="18,14" BackgroundColor="White" Stroke="{StaticResource SoftBorder}" StrokeThickness="1" MaximumWidthRequest="720" HorizontalOptions="Fill">
+            <Border.StrokeShape><RoundRectangle CornerRadius="20" /></Border.StrokeShape>
+            <VerticalStackLayout Spacing="10">
+                <Label x:Name="SelectedPriceText" Text="Total por unidad: $0" FontSize="23" FontAttributes="Bold"
+                       HorizontalTextAlignment="Center" TextColor="{StaticResource CheckoutGreen}" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                    <Button Text="Cancelar" Clicked="Cancel_Clicked" HeightRequest="62" CornerRadius="16" FontSize="17" FontAttributes="Bold"
+                            BackgroundColor="#EEEEEE" TextColor="#444444" />
+                    <Button Grid.Column="1" Text="Agregar al ticket" Clicked="Add_Clicked" HeightRequest="62" CornerRadius="16" FontSize="17" FontAttributes="Bold"
+                            BackgroundColor="{StaticResource CheckoutGreen}" TextColor="White" />
+                </Grid>
+            </VerticalStackLayout>
+        </Border>
     </Grid>
 </ContentPage>

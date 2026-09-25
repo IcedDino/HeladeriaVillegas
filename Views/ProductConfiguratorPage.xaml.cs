@@ -1,12 +1,21 @@
 using HeladeriaPOS.Models;
+using HeladeriaPOS.Services;
 using System.Globalization;
 
 namespace HeladeriaPOS.Views;
 
 public partial class ProductConfiguratorPage : ContentPage
 {
+    private static readonly Color SelectedColor = Color.FromArgb("#C2185B");
+    private static readonly Color UnselectedColor = Color.FromArgb("#2B1720");
+    private static readonly Color UnselectedBorder = Color.FromArgb("#E7C6D2");
+
     private readonly Product _product;
     private readonly TaskCompletionSource<ProductSelection?> _result = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly Dictionary<string, List<Button>> _chipGroups = new();
+    private readonly Dictionary<string, string> _selectedByGroup = new();
+    private readonly List<Button> _flavorChips = new();
+    private readonly List<string> _selectedFlavors = new();
     private bool _completed;
     private int _snackExtraCount;
     private int _extraScoopsCount;
@@ -16,46 +25,138 @@ public partial class ProductConfiguratorPage : ContentPage
     public ProductConfiguratorPage(Product product, IReadOnlyList<Flavor> flavors)
     {
         InitializeComponent();
+
         _product = product;
-        ConfigureForProduct();
+        GroupChips("SnackPreparation", SnackNormalChip, SnackPreparedChip, SnackMissingChip);
+        GroupChips("IceCreamPreparation", PrepNoneChip, PrepSingleChip, PrepCombinedChip);
+        GroupChips("IceCreamSize", SizeSmallChip, SizeMediumChip, SizeLargeChip, SizeJumboChip,
+            SizeDoubleChip, SizeTripleChip, SizeHalfLiterChip, SizeOneLiterChip, SizeFiveLiterChip, SizeTwelveLiterChip);
+
+        SelectChip("SnackPreparation", "normal");
+        SelectChip("IceCreamPreparation", "None");
+
         foreach (Flavor flavor in flavors)
         {
-            var button = new Button { Text = flavor.Name, Margin = new Thickness(0, 0, 8, 8), MinimumHeightRequest = 50 };
-            button.Clicked += FlavorQuickClicked;
-            FlavorButtons.Children.Add(button);
+            var chip = new Button
+            {
+                Text = flavor.Name,
+                AutomationId = $"Flavor|{flavor.Name}",
+                Margin = new Thickness(0, 0, 8, 8),
+                Style = (Style)Resources["ChipStyle"]
+            };
+            chip.Clicked += ChipClicked;
+            _flavorChips.Add(chip);
+            FlavorChips.Children.Add(chip);
         }
-        foreach (RadioButton radio in new[] { SnackNormalRadio, SnackPreparedRadio, SnackMissingRadio,
-            SizeSmallRadio, SizeMediumRadio, SizeLargeRadio, SizeJumboRadio, SizeDoubleRadio, SizeTripleRadio,
-            SizeHalfLiterRadio, SizeOneLiterRadio, SizeFiveLiterRadio, SizeTwelveLiterRadio,
-            PreparationNoneRadio, PreparationSingleRadio, PreparationCombinedRadio })
-            radio.CheckedChanged += (_, _) => UpdateSelectedPrice();
+
         CookedSwitch.Toggled += (_, _) => UpdateSelectedPrice();
         ChantillyCheck.CheckedChanged += (_, _) => UpdateSelectedPrice();
+        ConfigureForProduct();
         UpdateSelectedPrice();
     }
 
     public Task<ProductSelection?> WaitForResultAsync() => _result.Task;
 
+    private static (string Group, string Value) SplitId(string id)
+    {
+        int index = id.IndexOf('|');
+        return index < 0 ? (id, string.Empty) : (id[..index], id[(index + 1)..]);
+    }
+
+    private void GroupChips(string group, params Button[] chips)
+    {
+        var list = new List<Button>(chips);
+        _chipGroups[group] = list;
+        foreach (Button chip in list)
+            chip.Clicked += ChipClicked;
+    }
+
+    private void SelectChip(string group, string value)
+    {
+        _selectedByGroup[group] = value;
+        if (!_chipGroups.TryGetValue(group, out List<Button>? chips))
+            return;
+        foreach (Button chip in chips)
+        {
+            var (_, chipValue) = SplitId(chip.AutomationId);
+            SetChipVisual(chip, chipValue == value);
+        }
+    }
+
+    private static void SetChipVisual(Button chip, bool selected)
+    {
+        chip.BackgroundColor = selected ? SelectedColor : Colors.White;
+        chip.TextColor = selected ? Colors.White : UnselectedColor;
+        chip.BorderColor = selected ? SelectedColor : UnselectedBorder;
+    }
+
+    private void ChipClicked(object? sender, EventArgs e)
+    {
+        if (sender is not Button chip || string.IsNullOrEmpty(chip.AutomationId))
+            return;
+
+        var (group, value) = SplitId(chip.AutomationId);
+        if (group == "Flavor")
+        {
+            ToggleFlavor(chip, value);
+            return;
+        }
+
+        if (!_chipGroups.TryGetValue(group, out List<Button>? chips))
+            return;
+
+        foreach (Button other in chips)
+            SetChipVisual(other, other == chip);
+        _selectedByGroup[group] = value;
+
+        if (group == "IceCreamSize")
+            OnContainerSizeChanged();
+        UpdateSelectedPrice();
+    }
+
+    private void ToggleFlavor(Button chip, string name)
+    {
+        if (_selectedFlavors.Contains(name))
+        {
+            _selectedFlavors.Remove(name);
+            SetChipVisual(chip, false);
+        }
+        else
+        {
+            _selectedFlavors.Add(name);
+            SetChipVisual(chip, true);
+        }
+        FlavorSummaryText.Text = _selectedFlavors.Count == 0
+            ? "Ningún sabor elegido todavía."
+            : string.Join(" · ", _selectedFlavors);
+    }
+
     private void ConfigureForProduct()
     {
         ProductNameText.Text = _product.Name;
+        if (!string.IsNullOrWhiteSpace(_product.ImagePath))
+            ProductImage.Source = _product.ImagePath;
+        else
+            ProductImageFrame.IsVisible = false;
+
         FlavorSection.IsVisible = _product.Category is ProductCategory.Helados or ProductCategory.Especialidades;
-        SetPrice(SnackNormalRadio, "normal", "Normal");
-        SetPrice(SnackPreparedRadio, "prepared", "Preparado completo");
-        SetPrice(SnackMissingRadio, "missing", "Preparado sin ingrediente");
-        SetPrice(SizeSmallRadio, "Chico", "Chico");
-        SetPrice(SizeMediumRadio, "Mediano", "Mediano");
-        SetPrice(SizeLargeRadio, "Grande", "Grande");
-        SetPrice(SizeJumboRadio, "Jumbo", "Jumbo");
-        SetPrice(SizeDoubleRadio, "Doble", "Doble");
-        SetPrice(SizeTripleRadio, "Triple", "Triple");
-        SetPrice(SizeHalfLiterRadio, "MedioLitro", "Medio litro");
-        SetPrice(SizeOneLiterRadio, "UnLitro", "1 litro");
-        SetPrice(SizeFiveLiterRadio, "CincoLitros", "5 litros");
-        SetPrice(SizeTwelveLiterRadio, "DoceLitros", "12 litros");
-        SetPrice(PreparationSingleRadio, "ice_single", "Un ingrediente");
-        SetPrice(PreparationCombinedRadio, "ice_combined", "Chocolate o mermelada + cereal");
-        string Money(string code) => Services.PriceCatalog.Get(_product, code).ToString("C", CultureInfo.GetCultureInfo("es-MX"));
+        SetChipPrice(SnackNormalChip, "normal", "Normal");
+        SetChipPrice(SnackPreparedChip, "prepared", "Preparado completo");
+        SetChipPrice(SnackMissingChip, "missing", "Sin algún ingrediente");
+        SetChipPrice(SizeSmallChip, "Chico", "Chico");
+        SetChipPrice(SizeMediumChip, "Mediano", "Mediano");
+        SetChipPrice(SizeLargeChip, "Grande", "Grande");
+        SetChipPrice(SizeJumboChip, "Jumbo", "Jumbo");
+        SetChipPrice(SizeDoubleChip, "Doble", "Doble");
+        SetChipPrice(SizeTripleChip, "Triple", "Triple");
+        SetChipPrice(SizeHalfLiterChip, "MedioLitro", "Medio litro");
+        SetChipPrice(SizeOneLiterChip, "UnLitro", "1 litro");
+        SetChipPrice(SizeFiveLiterChip, "CincoLitros", "Bote 5 lts");
+        SetChipPrice(SizeTwelveLiterChip, "DoceLitros", "Bote 12 lts");
+        SetChipPrice(PrepSingleChip, "ice_single", "Un solo ingrediente");
+        SetChipPrice(PrepCombinedChip, "ice_combined", "Chocolate o mermelada + cereal");
+
+        string Money(string code) => PriceCatalog.Get(_product, code).ToString("C", CultureInfo.GetCultureInfo("es-MX"));
         if (_product.ProductType == ProductType.SopaPalomitas)
             CookedPriceText.Text = $"Normal {Money("normal")} · Cocinada {Money("cooked")}";
         if (_product.Category == ProductCategory.Snacks && _product.ProductType != ProductType.Custom)
@@ -72,17 +173,15 @@ public partial class ProductConfiguratorPage : ContentPage
         BaseHintText.Text = _product.ProductType switch
         {
             ProductType.Custom => $"Precio base {_product.BasePrice.ToString("C", CultureInfo.GetCultureInfo("es-MX"))}.",
-            ProductType.PapasSabritas => "Elige Normal ($35), preparado completo ($65) o preparado sin algún ingrediente ($60).",
-            ProductType.Fritura => "Precio $15. La salsa está incluida por defecto.",
-            ProductType.SopaPalomitas => "Precio normal $30; cocinada $35.",
+            ProductType.PapasSabritas => "Elige Normal, preparado completo o sin algún ingrediente.",
+            ProductType.Fritura => "Precio fijo. La salsa está incluida por defecto.",
+            ProductType.SopaPalomitas => "Van normal o cocinadas.",
             ProductType.Barquillo or ProductType.Vaso => "Selecciona un tamaño y agrega preparación o bolas extra si lo deseas.",
             ProductType.Canasta => "Selecciona Doble o Triple y agrega modificadores si lo deseas.",
             ProductType.Envase => "Selecciona ½ L, 1 L, 5 L o 12 L. En ½ L y 1 L puedes agregar ingredientes de preparación.",
-            ProductType.Malteada => "Malteada $40. Puedes agregar Chantilly u otros ingredientes.",
-            _ => "Especialidad $70. Puedes agregar Chantilly u otros ingredientes."
+            ProductType.Malteada => "Malteada clásica. Puedes agregar Chantilly u otros ingredientes.",
+            _ => "Especialidad clásica. Puedes agregar Chantilly u otros ingredientes."
         };
-        if (_product.ProductType != ProductType.Custom)
-            BaseHintText.Text = "Elige las opciones. El total se actualiza abajo con los precios vigentes.";
 
         bool isSnack = _product.Category == ProductCategory.Snacks;
         SnackExtrasSection.IsVisible = isSnack && _product.ProductType != ProductType.Custom;
@@ -133,7 +232,7 @@ public partial class ProductConfiguratorPage : ContentPage
             await DisplayAlert("Falta información", "Selecciona el tamaño antes de agregar el producto.", "Aceptar");
             return;
         }
-        if (FlavorSection.IsVisible && string.IsNullOrWhiteSpace(FlavorsEntry.Text))
+        if (FlavorSection.IsVisible && _selectedFlavors.Count == 0)
         {
             await DisplayAlert("Faltan sabores", "Selecciona al menos un sabor disponible.", "Aceptar");
             return;
@@ -150,8 +249,7 @@ public partial class ProductConfiguratorPage : ContentPage
             PreparationExtraIngredientCount = _containerIngredientCount,
             Chantilly = ChantillyCheck.IsChecked,
             OtherIngredientCount = _otherIngredientCount,
-            Flavors = FlavorsEntry.Text?.Trim(),
-            Instructions = InstructionsEntry.Text?.Trim()
+            Flavors = string.Join(", ", _selectedFlavors)
         };
 
         _completed = true;
@@ -171,34 +269,36 @@ public partial class ProductConfiguratorPage : ContentPage
             _result.TrySetResult(null);
     }
 
-    private SnackPreparation ReadSnackPreparation()
-    {
-        if (SnackPreparedRadio.IsChecked) return SnackPreparation.PreparedAll;
-        if (SnackMissingRadio.IsChecked) return SnackPreparation.MissingIngredient;
-        return SnackPreparation.Normal;
-    }
+    private void ChantillyRowTapped(object? sender, TappedEventArgs e) => ChantillyCheck.IsChecked = !ChantillyCheck.IsChecked;
 
-    private IceCreamPreparation ReadIceCreamPreparation()
+    private SnackPreparation ReadSnackPreparation() => _selectedByGroup.GetValueOrDefault("SnackPreparation") switch
     {
-        if (PreparationSingleRadio.IsChecked) return IceCreamPreparation.SingleIngredient;
-        if (PreparationCombinedRadio.IsChecked) return IceCreamPreparation.ChocolateOrJamAndCereal;
-        return IceCreamPreparation.None;
-    }
+        "prepared" => SnackPreparation.PreparedAll,
+        "missing" => SnackPreparation.MissingIngredient,
+        _ => SnackPreparation.Normal
+    };
 
-    private IceCreamSize? ReadSelectedSize()
+    private IceCreamPreparation ReadIceCreamPreparation() => _selectedByGroup.GetValueOrDefault("IceCreamPreparation") switch
     {
-        if (SizeSmallRadio.IsChecked) return IceCreamSize.Chico;
-        if (SizeMediumRadio.IsChecked) return IceCreamSize.Mediano;
-        if (SizeLargeRadio.IsChecked) return IceCreamSize.Grande;
-        if (SizeJumboRadio.IsChecked) return IceCreamSize.Jumbo;
-        if (SizeDoubleRadio.IsChecked) return IceCreamSize.Doble;
-        if (SizeTripleRadio.IsChecked) return IceCreamSize.Triple;
-        if (SizeHalfLiterRadio.IsChecked) return IceCreamSize.MedioLitro;
-        if (SizeOneLiterRadio.IsChecked) return IceCreamSize.UnLitro;
-        if (SizeFiveLiterRadio.IsChecked) return IceCreamSize.CincoLitros;
-        if (SizeTwelveLiterRadio.IsChecked) return IceCreamSize.DoceLitros;
-        return null;
-    }
+        "SingleIngredient" => IceCreamPreparation.SingleIngredient,
+        "ChocolateOrJamAndCereal" => IceCreamPreparation.ChocolateOrJamAndCereal,
+        _ => IceCreamPreparation.None
+    };
+
+    private IceCreamSize? ReadSelectedSize() => _selectedByGroup.GetValueOrDefault("IceCreamSize") switch
+    {
+        "Chico" => IceCreamSize.Chico,
+        "Mediano" => IceCreamSize.Mediano,
+        "Grande" => IceCreamSize.Grande,
+        "Jumbo" => IceCreamSize.Jumbo,
+        "Doble" => IceCreamSize.Doble,
+        "Triple" => IceCreamSize.Triple,
+        "MedioLitro" => IceCreamSize.MedioLitro,
+        "UnLitro" => IceCreamSize.UnLitro,
+        "CincoLitros" => IceCreamSize.CincoLitros,
+        "DoceLitros" => IceCreamSize.DoceLitros,
+        _ => null
+    };
 
     private void SnackExtra_Clicked(object? sender, EventArgs e)
     {
@@ -246,9 +346,9 @@ public partial class ProductConfiguratorPage : ContentPage
         return Math.Max(0, current - 1);
     }
 
-    private void ContainerSize_CheckedChanged(object? sender, CheckedChangedEventArgs e)
+    private void OnContainerSizeChanged()
     {
-        bool canPrepare = SizeHalfLiterRadio.IsChecked || SizeOneLiterRadio.IsChecked;
+        bool canPrepare = _selectedByGroup.GetValueOrDefault("IceCreamSize") is "MedioLitro" or "UnLitro";
         ContainerPreparationExtras.IsVisible = canPrepare;
         if (!canPrepare)
         {
@@ -257,11 +357,13 @@ public partial class ProductConfiguratorPage : ContentPage
         }
     }
 
-    private void SetPrice(RadioButton radio, string code, string label)
+    private void SetChipPrice(Button chip, string code, string label)
     {
-        ProductPrice? price = _product.Prices.FirstOrDefault(p => p.Code == code);
-        if (price is not null)
-            radio.Content = $"{label} — {price.Amount.ToString("C", CultureInfo.GetCultureInfo("es-MX"))}";
+        decimal amount = (_product.Prices.FirstOrDefault(p => p.Code == code)?.Amount
+            ?? PriceCatalog.Defaults(_product.ProductType).FirstOrDefault(p => p.Code == code)?.Amount)
+            ?? 0m;
+        if (amount > 0)
+            chip.Text = $"{label} — {amount.ToString("C", CultureInfo.GetCultureInfo("es-MX"))}";
     }
 
     private ProductSelection CurrentSelection() => new()
@@ -277,7 +379,7 @@ public partial class ProductConfiguratorPage : ContentPage
     {
         try
         {
-            PricingResult price = new Services.PricingService().Calculate(_product, CurrentSelection());
+            PricingResult price = new PricingService().Calculate(_product, CurrentSelection());
             decimal total = price.BasePrice + price.Modifiers.Sum(m => m.Total);
             SelectedPriceText.Text = $"Total por unidad: {total.ToString("C", CultureInfo.GetCultureInfo("es-MX"))}";
         }
@@ -287,12 +389,11 @@ public partial class ProductConfiguratorPage : ContentPage
         }
     }
 
-    private void FlavorQuickClicked(object? sender, EventArgs e)
+    private void ClearFlavorsClicked(object? sender, EventArgs e)
     {
-        if (sender is not Button button) return;
-        string current = FlavorsEntry.Text?.Trim() ?? string.Empty;
-        FlavorsEntry.Text = current.Length == 0 ? button.Text : current + ", " + button.Text;
+        _selectedFlavors.Clear();
+        foreach (Button chip in _flavorChips)
+            SetChipVisual(chip, false);
+        FlavorSummaryText.Text = "Ningún sabor elegido todavía.";
     }
-
-    private void ClearFlavorsClicked(object? sender, EventArgs e) => FlavorsEntry.Text = string.Empty;
 }

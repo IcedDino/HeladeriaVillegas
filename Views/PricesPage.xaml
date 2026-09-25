@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HeladeriaPOS.Views.PricesPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    NavigationPage.HasNavigationBar="False"
+    BackgroundColor="{StaticResource PageBackground}">
+    <ContentPage.Resources>
+        <Style x:Key="SectionCaption" TargetType="Label">
+            <Setter Property="FontSize" Value="10.5" />
+            <Setter Property="CharacterSpacing" Value="1.2" />
+            <Setter Property="FontAttributes" Value="Bold" />
+            <Setter Property="TextColor" Value="{StaticResource TextSecondary}" />
+        </Style>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12" Padding="18,16">
+        <!-- Header -->
+        <Grid ColumnDefinitions="*,Auto">
+            <VerticalStackLayout Spacing="1">
+                <Label Text="Precios y disponibilidad" FontSize="27" FontAttributes="Bold" TextColor="{StaticResource BrandRed}" />
+                <Label Text="Sabores, precios y productos a la venta" FontSize="13" TextColor="{StaticResource TextSecondary}" />
+            </VerticalStackLayout>
+            <Button Grid.Column="1" Text="×" Clicked="OnCloseClicked" WidthRequest="52" HeightRequest="52"
+                    CornerRadius="26" Padding="0" FontSize="26" BackgroundColor="#FFF0F3" TextColor="{StaticResource BrandDarkRed}"
+                    SemanticProperties.Description="Cerrar precios" />
+        </Grid>
+
+        <ScrollView Grid.Row="1" VerticalScrollBarVisibility="Never">
+            <VerticalStackLayout x:Name="Body" Spacing="12" />
+        </ScrollView>
+
+        <!-- Footer actions -->
+        <Grid Grid.Row="2" ColumnDefinitions="*,1.6*" ColumnSpacing="10">
+            <Button Text="Cerrar" Clicked="OnCloseClicked" HeightRequest="58" CornerRadius="14" FontSize="16" FontAttributes="Bold"
+                    BackgroundColor="#EEEEEE" TextColor="#444444" />
+            <Button Grid.Column="1" Text="➕  Agregar producto" Clicked="OnAddProductClicked" HeightRequest="58" CornerRadius="14"
+                    FontSize="16" FontAttributes="Bold" BackgroundColor="{StaticResource CheckoutGreen}" TextColor="White"
+                    SemanticProperties.Description="Ir a agregar un producto nuevo" />
+        </Grid>
+    </Grid>
+</ContentPage>

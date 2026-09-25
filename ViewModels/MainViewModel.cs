@@ -72,6 +72,11 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsCashPayment))]
     [NotifyPropertyChangedFor(nameof(IsMixedPayment))]
+    [NotifyPropertyChangedFor(nameof(IsCashSelected))]
+    [NotifyPropertyChangedFor(nameof(IsCardSelected))]
+    [NotifyPropertyChangedFor(nameof(IsTransferSelected))]
+    [NotifyPropertyChangedFor(nameof(IsCardUsed))]
+    [NotifyPropertyChangedFor(nameof(IsTransferUsed))]
     [NotifyPropertyChangedFor(nameof(PaymentMethodDisplay))]
     private PaymentMethod paymentMethod = HeladeriaPOS.Models.PaymentMethod.Cash;
 
@@ -83,14 +88,32 @@ public partial class MainViewModel : ObservableObject
     private string statusMessage = "Listo para vender";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasHeldOrders))]
+    [NotifyPropertyChangedFor(nameof(HeldOrderCountDisplay))]
+    private int heldOrderCount;
+
+    [ObservableProperty]
     private bool isBusy;
 
     public bool IsSnacksSelected => SelectedCategory == ProductCategory.Snacks;
     public bool IsHeladosSelected => SelectedCategory == ProductCategory.Helados;
     public bool IsEspecialidadesSelected => SelectedCategory == ProductCategory.Especialidades;
     public bool HasItemsInCart => Cart.Count > 0;
+    public ObservableCollection<HeldOrderSummary> HeldOrders { get; } = [];
+    public bool HasHeldOrders => HeldOrderCount > 0;
+    public string HeldOrderCountDisplay => HeldOrderCount switch
+    {
+        0 => "Sin órdenes guardadas",
+        1 => "1 orden guardada",
+        _ => $"{HeldOrderCount} órdenes guardadas"
+    };
     public bool IsCashPayment => PaymentMethod is HeladeriaPOS.Models.PaymentMethod.Cash or HeladeriaPOS.Models.PaymentMethod.Mixed;
     public bool IsMixedPayment => PaymentMethod == HeladeriaPOS.Models.PaymentMethod.Mixed;
+    public bool IsCashSelected => PaymentMethod == HeladeriaPOS.Models.PaymentMethod.Cash;
+    public bool IsCardSelected => PaymentMethod == HeladeriaPOS.Models.PaymentMethod.Card;
+    public bool IsTransferSelected => PaymentMethod == HeladeriaPOS.Models.PaymentMethod.Transfer;
+    public bool IsCardUsed => PaymentMethod is HeladeriaPOS.Models.PaymentMethod.Card or HeladeriaPOS.Models.PaymentMethod.Mixed;
+    public bool IsTransferUsed => PaymentMethod is HeladeriaPOS.Models.PaymentMethod.Transfer or HeladeriaPOS.Models.PaymentMethod.Mixed;
     public bool CanUndoClear => _lastCleared is not null;
     public string PaymentMethodDisplay => PaymentMethod switch
     {
@@ -171,6 +194,7 @@ public partial class MainViewModel : ObservableObject
             }
             if (draft is not null) RestoreDraft(draft);
             _loaded = true;
+            RefreshHeldOrders();
             StatusMessage = draft is null ? "Listo para vender" : $"Orden {OrderNumber} recuperada";
             try { _backupService.BackupOncePerDay(); }
             catch (Exception ex) { StatusMessage += $" · Respaldo pendiente: {ex.Message}"; }
@@ -541,10 +565,26 @@ public partial class MainViewModel : ObservableObject
         if (Cart.Count == 0) return;
         _draftService.Hold(Snapshot());
         CreateNewOrder();
+        RefreshHeldOrders();
         StatusMessage = "Orden guardada en espera";
     }
 
-    public IReadOnlyList<string> HeldOrders() => _draftService.HeldOrders();
+    public void RefreshHeldOrders()
+    {
+        List<string> names = _draftService.HeldOrders().OrderByDescending(n => n).ToList();
+        HeldOrders.Clear();
+        for (int i = 0; i < names.Count; i++)
+        {
+            OrderDraftService.Draft? draft = _draftService.LoadHeld(names[i]);
+            HeldOrders.Add(new HeldOrderSummary(
+                names[i],
+                draft?.Items.Sum(item => item.Quantity) ?? 0,
+                draft?.Items.Sum(item => item.LineTotal) ?? 0m));
+        }
+        HeldOrderCount = HeldOrders.Count;
+    }
+
+    public IReadOnlyList<string> HeldOrderNames() => _draftService.HeldOrders();
 
     public bool RestoreHeldOrder(string name)
     {
@@ -552,8 +592,16 @@ public partial class MainViewModel : ObservableObject
         if (draft is null) return false;
         RestoreDraft(draft);
         _draftService.DeleteHeld(name);
+        RefreshHeldOrders();
         StatusMessage = "Orden en espera recuperada";
         return true;
+    }
+
+    public void DeleteHeldOrder(string name)
+    {
+        _draftService.DeleteHeld(name);
+        RefreshHeldOrders();
+        StatusMessage = "Orden en espera eliminada";
     }
 
     private OrderDraftService.Draft Snapshot() => new()
@@ -596,4 +644,21 @@ public partial class MainViewModel : ObservableObject
         try { _draftService.SaveCurrent(Snapshot()); }
         catch (Exception ex) { StatusMessage = $"No se pudo proteger la orden: {ex.Message}"; }
     }
+}
+
+public sealed class HeldOrderSummary
+{
+    public HeldOrderSummary(string orderNumber, int itemCount, decimal total)
+    {
+        OrderNumber = orderNumber;
+        ItemCount = itemCount;
+        Total = total;
+    }
+
+    public string OrderNumber { get; }
+    public int ItemCount { get; }
+    public decimal Total { get; }
+
+    public string ItemCountDisplay => $"{ItemCount} {(ItemCount == 1 ? "artículo" : "artículos")}";
+    public string TotalDisplay => Total.ToString("C0", CultureInfo.GetCultureInfo("es-MX"));
 }

@@ -36,6 +36,25 @@ public partial class MainPage : ContentPage
         _ticketService = ticketService;
         _backupService = backupService;
         ProductCollectionView.SizeChanged += (s, e) => UpdateCardHeight();
+        viewModel.PropertyChanged += OnViewModelPropertyChanged;
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(MainViewModel.HasItemsInCart) && !_viewModel.HasItemsInCart && PaymentOverlay.IsVisible)
+            PaymentOverlay.IsVisible = false;
+    }
+
+    private void OnOpenPaymentClicked(object? sender, EventArgs e)
+    {
+        if (!_viewModel.HasItemsInCart)
+            return;
+        PaymentOverlay.IsVisible = true;
+    }
+
+    private void OnClosePaymentClicked(object? sender, EventArgs e)
+    {
+        PaymentOverlay.IsVisible = false;
     }
 
     protected override async void OnAppearing()
@@ -107,12 +126,8 @@ public partial class MainPage : ContentPage
 
     private void OnReceivedCashTapped(object? sender, TappedEventArgs e) => ShowNumericKeypad();
 
-    private void OnReceivedCashFocused(object? sender, FocusEventArgs e) => ShowNumericKeypad();
-    private void OnDiscountFocused(object? sender, FocusEventArgs e) => ShowKeypad(KeypadTarget.Discount, "DESCUENTO");
     private void OnDiscountTapped(object? sender, TappedEventArgs e) => ShowKeypad(KeypadTarget.Discount, "DESCUENTO");
-    private void OnCardFocused(object? sender, FocusEventArgs e) => ShowKeypad(KeypadTarget.Card, "PAGO CON TARJETA");
     private void OnCardTapped(object? sender, TappedEventArgs e) => ShowKeypad(KeypadTarget.Card, "PAGO CON TARJETA");
-    private void OnTransferFocused(object? sender, FocusEventArgs e) => ShowKeypad(KeypadTarget.Transfer, "TRANSFERENCIA");
     private void OnTransferTapped(object? sender, TappedEventArgs e) => ShowKeypad(KeypadTarget.Transfer, "TRANSFERENCIA");
 
     private void OnBasePriceTapped(object? sender, TappedEventArgs e) =>
@@ -127,11 +142,6 @@ public partial class MainPage : ContentPage
     {
         _keypadTarget = target;
         KeypadTitle.Text = title;
-        if (target == KeypadTarget.Cash)
-            ReceivedCashEntry.Unfocus();
-        if (target == KeypadTarget.Discount) DiscountEntry.Unfocus();
-        if (target == KeypadTarget.Card) CardEntry.Unfocus();
-        if (target == KeypadTarget.Transfer) TransferEntry.Unfocus();
         NumericKeypadOverlay.IsVisible = true;
     }
 
@@ -220,53 +230,52 @@ public partial class MainPage : ContentPage
 
     private void OnUndoOrderClicked(object? sender, EventArgs e) => _viewModel.UndoClear();
 
-    private async void OnHoldOrderClicked(object? sender, EventArgs e)
+    private void OnHoldOrderClicked(object? sender, EventArgs e)
     {
         if (!_viewModel.HasItemsInCart) return;
         _viewModel.HoldCurrentOrder();
-        await DisplayAlert("Orden en espera", "Puedes recuperarla desde el botón Recuperar.", "Aceptar");
     }
 
-    private async void OnRestoreHeldClicked(object? sender, EventArgs e)
+    private void OnOpenHeldOrdersClicked(object? sender, EventArgs e)
     {
-        IReadOnlyList<string> orders = _viewModel.HeldOrders();
-        if (orders.Count == 0) { await DisplayAlert("Órdenes en espera", "No hay órdenes guardadas.", "Aceptar"); return; }
-        string? selected = await DisplayActionSheet("Recuperar orden", "Cerrar", null, orders.ToArray());
-        if (selected is null || selected == "Cerrar") return;
-        if (_viewModel.HasItemsInCart && !await DisplayAlert("Orden actual", "La orden actual será reemplazada. ¿Continuar?", "Continuar", "Volver")) return;
+        _viewModel.RefreshHeldOrders();
+        HeldOrdersOverlay.IsVisible = true;
+    }
+
+    private void OnCloseHeldOrdersClicked(object? sender, EventArgs e)
+    {
+        HeldOrdersOverlay.IsVisible = false;
+    }
+
+    private async void OnRestoreHeldFromOverlayClicked(object? sender, EventArgs e)
+    {
+        if (sender is not Button button || button.CommandParameter is not string name) return;
+        if (_viewModel.HasItemsInCart &&
+            !await DisplayAlert("Orden actual", $"La orden actual ({_viewModel.OrderNumber}) se pondrá en espera para abrir {name}. ¿Continuar?", "Continuar", "Volver"))
+            return;
         if (_viewModel.HasItemsInCart) _viewModel.HoldCurrentOrder();
-        _viewModel.RestoreHeldOrder(selected);
+        _viewModel.RestoreHeldOrder(name);
+        HeldOrdersOverlay.IsVisible = false;
+    }
+
+    private async void OnDeleteHeldClicked(object? sender, EventArgs e)
+    {
+        if (sender is not Button button || button.CommandParameter is not string name) return;
+        if (!await DisplayAlert("Eliminar en espera", $"¿Quitar la orden {name} de la lista en espera?", "Eliminar", "Conservar")) return;
+        _viewModel.DeleteHeldOrder(name);
     }
 
     private async void OnSalesClicked(object? sender, EventArgs e) => await Navigation.PushModalAsync(new NavigationPage(new SalesPage(_ticketService)));
-    private async void OnPricesClicked(object? sender, EventArgs e) => await Navigation.PushModalAsync(new NavigationPage(new PricesPage(_ticketService, _viewModel)));
-    private async void OnBackupClicked(object? sender, EventArgs e)
-    {
-        try
-        {
-            string? choice = await DisplayActionSheet("Base de datos", "Cerrar", null, "Crear respaldo", "Restaurar respaldo");
-            if (choice == "Crear respaldo")
-            {
-                string path = _backupService.CreateBackup();
-                await DisplayAlert("Respaldo verificado", $"Copia creada en:\n{path}\n\nCópiala también a una USB o nube para protegerla si falla esta computadora.", "Aceptar");
-            }
-            else if (choice == "Restaurar respaldo")
-            {
-                FileResult? file = await FilePicker.Default.PickAsync(new PickOptions { PickerTitle = "Selecciona una copia pos_*.db" });
-                if (file is null) return;
-                if (!await DisplayAlert("Restaurar ventas", "Al reiniciar, el respaldo reemplazará la base actual. Se conservará una copia de la base anterior. ¿Continuar?", "Preparar restauración", "Volver")) return;
-                _backupService.ScheduleRestore(file.FullPath);
-                await DisplayAlert("Restauración preparada", "Cierra y vuelve a abrir la aplicación para aplicar el respaldo.", "Aceptar");
-            }
-        }
-        catch (Exception ex) { await DisplayAlert("Error de respaldo", ex.Message, "Aceptar"); }
-    }
+    private async void OnPricesClicked(object? sender, EventArgs e) => await Navigation.PushModalAsync(new NavigationPage(new PricesPage(_ticketService, _viewModel, OpenAddProductForm)));
+    private async void OnBackupClicked(object? sender, EventArgs e) => await Navigation.PushModalAsync(new NavigationPage(new RespaldoPage(_backupService)));
 
-    private void OnAddProductClicked(object? sender, EventArgs e)
+    public void OpenAddProductForm()
     {
         ResetAddProductForm();
         AddProductOverlay.IsVisible = true;
     }
+
+    private void OnAddProductClicked(object? sender, EventArgs e) => OpenAddProductForm();
 
     private void OnCancelAddProductClicked(object? sender, EventArgs e)
     {
@@ -409,11 +418,11 @@ public partial class MainPage : ContentPage
     {
         NewProductCategory.SelectedIndex = 0;
         NewProductName.Text = string.Empty;
-        NewProductPrice.Text = string.Empty;
+        NewProductPrice.Text = "0.00";
         NewProductTag.Text = string.Empty;
         NewProductAllowsExtras.IsToggled = false;
         NewProductExtraName.Text = string.Empty;
-        NewProductExtraPrice.Text = string.Empty;
+        NewProductExtraPrice.Text = "0.00";
         _selectedOpenverseImage = null;
         NewProductImagePreview.Source = "placeholder.png";
         NewProductImageAttribution.Text = "Ninguna foto seleccionada";

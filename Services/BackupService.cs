@@ -7,6 +7,28 @@ public sealed class BackupService
     private readonly string _database = Path.Combine(FileSystem.AppDataDirectory, "pos.db");
     private readonly string _backupDirectory = Path.Combine(FileSystem.AppDataDirectory, "Backups");
 
+    public string BackupDirectoryPath => _backupDirectory;
+
+    public string? LatestBackupPath
+    {
+        get
+        {
+            if (!Directory.Exists(_backupDirectory))
+                return null;
+            return Directory.GetFiles(_backupDirectory, "pos_*.db").OrderByDescending(path => path).FirstOrDefault();
+        }
+    }
+
+    public bool HasTodayBackup
+    {
+        get
+        {
+            if (!Directory.Exists(_backupDirectory))
+                return false;
+            return Directory.GetFiles(_backupDirectory, $"pos_{DateTime.Now:yyyyMMdd}_*.db").Length > 0;
+        }
+    }
+
     public string CreateBackup()
     {
         Directory.CreateDirectory(_backupDirectory);
