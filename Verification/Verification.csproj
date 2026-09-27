@@ -16,5 +16,6 @@
     <Compile Include="..\Services\TicketService.cs" Link="Services\TicketService.cs" />
     <Compile Include="..\Services\OrderDraftService.cs" Link="Services\OrderDraftService.cs" />
     <Compile Include="..\Services\BackupService.cs" Link="Services\BackupService.cs" />
+    <Compile Include="..\Services\StartupCoordinator.cs" Link="Services\StartupCoordinator.cs" />
   </ItemGroup>
 </Project>

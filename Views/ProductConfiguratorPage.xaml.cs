@@ -4,29 +4,30 @@ using System.Globalization;
 
 namespace HeladeriaPOS.Views;
 
-public partial class ProductConfiguratorPage : ContentPage
+public partial class ProductConfiguratorPage : ContentView
 {
     private static readonly Color SelectedColor = Color.FromArgb("#C2185B");
     private static readonly Color UnselectedColor = Color.FromArgb("#2B1720");
     private static readonly Color UnselectedBorder = Color.FromArgb("#E7C6D2");
 
     private readonly Product _product;
+    private readonly Func<string, string, Task> _showAlertAsync;
     private readonly TaskCompletionSource<ProductSelection?> _result = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly Dictionary<string, List<Button>> _chipGroups = new();
     private readonly Dictionary<string, string> _selectedByGroup = new();
     private readonly List<Button> _flavorChips = new();
     private readonly List<string> _selectedFlavors = new();
-    private bool _completed;
     private int _snackExtraCount;
     private int _extraScoopsCount;
     private int _containerIngredientCount;
     private int _otherIngredientCount;
 
-    public ProductConfiguratorPage(Product product, IReadOnlyList<Flavor> flavors)
+    public ProductConfiguratorPage(Product product, IReadOnlyList<Flavor> flavors, Func<string, string, Task> showAlertAsync)
     {
         InitializeComponent();
 
         _product = product;
+        _showAlertAsync = showAlertAsync;
         GroupChips("SnackPreparation", SnackNormalChip, SnackPreparedChip, SnackMissingChip);
         GroupChips("IceCreamPreparation", PrepNoneChip, PrepSingleChip, PrepCombinedChip);
         GroupChips("IceCreamSize", SizeSmallChip, SizeMediumChip, SizeLargeChip, SizeJumboChip,
@@ -56,6 +57,8 @@ public partial class ProductConfiguratorPage : ContentPage
     }
 
     public Task<ProductSelection?> WaitForResultAsync() => _result.Task;
+
+    public void Cancel() => _result.TrySetResult(null);
 
     private static (string Group, string Value) SplitId(string id)
     {
@@ -229,12 +232,12 @@ public partial class ProductConfiguratorPage : ContentPage
 
         if (requiresSize && size is null)
         {
-            await DisplayAlert("Falta información", "Selecciona el tamaño antes de agregar el producto.", "Aceptar");
+            await _showAlertAsync("Falta información", "Selecciona el tamaño antes de agregar el producto.");
             return;
         }
         if (FlavorSection.IsVisible && _selectedFlavors.Count == 0)
         {
-            await DisplayAlert("Faltan sabores", "Selecciona al menos un sabor disponible.", "Aceptar");
+            await _showAlertAsync("Faltan sabores", "Selecciona al menos un sabor disponible.");
             return;
         }
 
@@ -249,24 +252,16 @@ public partial class ProductConfiguratorPage : ContentPage
             PreparationExtraIngredientCount = _containerIngredientCount,
             Chantilly = ChantillyCheck.IsChecked,
             OtherIngredientCount = _otherIngredientCount,
-            Flavors = string.Join(", ", _selectedFlavors)
+            Flavors = string.Join(", ", _selectedFlavors),
+            Instructions = InstructionsEntry.Text?.Trim()
         };
 
-        _completed = true;
         _result.TrySetResult(selection);
     }
 
     private void Cancel_Clicked(object? sender, EventArgs e)
     {
-        _completed = true;
-        _result.TrySetResult(null);
-    }
-
-    protected override void OnDisappearing()
-    {
-        base.OnDisappearing();
-        if (!_completed)
-            _result.TrySetResult(null);
+        Cancel();
     }
 
     private void ChantillyRowTapped(object? sender, TappedEventArgs e) => ChantillyCheck.IsChecked = !ChantillyCheck.IsChecked;

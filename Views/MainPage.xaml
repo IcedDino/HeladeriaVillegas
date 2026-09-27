@@ -78,17 +78,17 @@
                 
                 <!--Categories -->
                 <Grid x:Name='Categories' Grid.Row="1" ColumnDefinitions="*,*,*" ColumnSpacing="12" HorizontalOptions="Fill" VerticalOptions="Fill">
-                    <Button Text="🍦  Helados" Grid.Column="0" HorizontalOptions="Fill" VerticalOptions="Fill" Style="{StaticResource CategoryButtonStyle}" Command="{Binding SelectCategoryCommand}" CommandParameter="Helados">
+                    <Button x:Name="HeladosCategoryButton" Text="🍦  Helados" Grid.Column="0" HorizontalOptions="Fill" VerticalOptions="Fill" Style="{StaticResource CategoryButtonStyle}" Command="{Binding SelectCategoryCommand}" CommandParameter="Helados">
                             <Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding IsHeladosSelected}" Value="True">
                                 <Setter Property="BackgroundColor" Value="{StaticResource BrandDarkRed}" /><Setter Property="TextColor" Value="White" />
                             </DataTrigger></Button.Triggers>
                     </Button>
-                    <Button Text="🥨  Snacks" Grid.Column="1" HorizontalOptions="Fill" VerticalOptions="Fill" Style="{StaticResource CategoryButtonStyle}" Command="{Binding SelectCategoryCommand}" CommandParameter="Snacks">
+                    <Button x:Name="SnacksCategoryButton" Text="🥨  Snacks" Grid.Column="1" HorizontalOptions="Fill" VerticalOptions="Fill" Style="{StaticResource CategoryButtonStyle}" Command="{Binding SelectCategoryCommand}" CommandParameter="Snacks">
                             <Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding IsSnacksSelected}" Value="True">
                                 <Setter Property="BackgroundColor" Value="{StaticResource BrandDarkRed}" /><Setter Property="TextColor" Value="White" />
                             </DataTrigger></Button.Triggers>
                     </Button>
-                    <Button Text="★  Especialidades" Grid.Column="2" HorizontalOptions="Fill" VerticalOptions="Fill" Style="{StaticResource CategoryButtonStyle}" Command="{Binding SelectCategoryCommand}" CommandParameter="Especialidades">
+                    <Button x:Name="SpecialtiesCategoryButton" Text="★  Especialidades" Grid.Column="2" HorizontalOptions="Fill" VerticalOptions="Fill" Style="{StaticResource CategoryButtonStyle}" Command="{Binding SelectCategoryCommand}" CommandParameter="Especialidades">
                             <Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding IsEspecialidadesSelected}" Value="True">
                                 <Setter Property="BackgroundColor" Value="{StaticResource BrandDarkRed}" /><Setter Property="TextColor" Value="White" />
                             </DataTrigger></Button.Triggers>
@@ -479,7 +479,7 @@
 
         <!-- Payment popup -->
         <Grid x:Name="PaymentOverlay" Grid.ColumnSpan="2" ZIndex="150" IsVisible="False" BackgroundColor="#B0000000">
-            <Border Margin="32" Padding="24" BackgroundColor="White" Stroke="#E8E9F3" StrokeThickness="1"
+            <Border x:Name="PaymentCard" Margin="32" Padding="24" BackgroundColor="White" Stroke="#E8E9F3" StrokeThickness="1"
                     HorizontalOptions="Fill" VerticalOptions="Fill">
                 <Border.StrokeShape><RoundRectangle CornerRadius="22" /></Border.StrokeShape>
                 <Border.Shadow>
@@ -496,7 +496,8 @@
                                 SemanticProperties.Description="Cerrar cobro" />
                     </Grid>
 
-                    <Grid Grid.Row="1" ColumnDefinitions="1.15*,0.85*" ColumnSpacing="22">
+                    <ScrollView Grid.Row="1" VerticalScrollBarVisibility="Never">
+                    <Grid ColumnDefinitions="1.15*,0.85*" ColumnSpacing="22">
                         <!-- Left: datos de pago -->
                         <VerticalStackLayout Spacing="12">
                             <Label Text="Método de pago" FontSize="15" FontAttributes="Bold" />
@@ -646,7 +647,27 @@
                             </VerticalStackLayout>
                         </Border>
                     </Grid>
+                    </ScrollView>
                 </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Product configuration popup -->
+        <Grid x:Name="ProductConfiguratorOverlay" Grid.ColumnSpan="2" ZIndex="160" IsVisible="False">
+            <Grid BackgroundColor="#80000000">
+                <Grid.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnProductConfiguratorBackdropTapped" />
+                </Grid.GestureRecognizers>
+            </Grid>
+            <Border x:Name="ProductConfiguratorCard" Margin="20" WidthRequest="820" HeightRequest="600"
+                    MaximumWidthRequest="920" MaximumHeightRequest="820"
+                    HorizontalOptions="Fill" VerticalOptions="Fill"
+                    BackgroundColor="{StaticResource PageBackground}" Stroke="#E8E9F3" StrokeThickness="1">
+                <Border.StrokeShape><RoundRectangle CornerRadius="24" /></Border.StrokeShape>
+                <Border.Shadow>
+                    <Shadow Brush="#55000000" Offset="0,10" Radius="24" Opacity="0.6" />
+                </Border.Shadow>
+                <ContentView x:Name="ProductConfiguratorContent" />
             </Border>
         </Grid>
 

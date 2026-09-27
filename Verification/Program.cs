@@ -2,6 +2,39 @@ using HeladeriaPOS.Data;
 using HeladeriaPOS.Models;
 using HeladeriaPOS.Services;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics;
+
+var startupCoordinator = new StartupCoordinator();
+var renderer = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+Task visibleInterval = startupCoordinator.WaitForRendererAsync(renderer.Task,
+    TimeSpan.FromMilliseconds(150), TimeSpan.FromSeconds(2));
+await Task.Delay(200);
+Check(!visibleInterval.IsCompleted, "La espera visible no termina antes de cargar el modelo");
+var visibleClock = Stopwatch.StartNew();
+renderer.SetResult();
+await visibleInterval;
+Check(visibleClock.ElapsedMilliseconds >= 130, "El modelo permanece visible tras terminar de cargar");
+await startupCoordinator.WaitForRendererAsync(Task.FromException(new Exception("WebGL unavailable")),
+    TimeSpan.FromSeconds(5), TimeSpan.FromMilliseconds(50)).WaitAsync(TimeSpan.FromSeconds(1));
+await startupCoordinator.WaitForRendererAsync(new TaskCompletionSource().Task,
+    TimeSpan.FromSeconds(5), TimeSpan.FromMilliseconds(50)).WaitAsync(TimeSpan.FromSeconds(1));
+var initializationStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+var releaseInitialization = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+Task<Exception?> coordinatedStartup = startupCoordinator.RunAsync(async () =>
+{
+    initializationStarted.SetResult();
+    await releaseInitialization.Task;
+}, TimeSpan.FromMilliseconds(120));
+await initializationStarted.Task.WaitAsync(TimeSpan.FromSeconds(2));
+Check(!coordinatedStartup.IsCompleted, "Arranque espera la inicialización y el tiempo mínimo");
+releaseInitialization.SetResult();
+Check(await coordinatedStartup is null, "Arranque completa las dos tareas");
+
+var failureClock = Stopwatch.StartNew();
+Exception? startupFailure = await startupCoordinator.RunAsync(
+    () => Task.FromException(new InvalidOperationException("inicio fallido")), TimeSpan.FromMilliseconds(120));
+Check(startupFailure is InvalidOperationException && failureClock.ElapsedMilliseconds >= 100,
+    "Error de inicio se entrega después del tiempo mínimo");
 
 string path = Path.Combine(Path.GetTempPath(), "heladeria_verify_" + Guid.NewGuid().ToString("N") + ".db");
 string legacyPath = Path.Combine(Path.GetTempPath(), "heladeria_legacy_" + Guid.NewGuid().ToString("N") + ".db");
@@ -70,7 +103,7 @@ try
     Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
     BackupService.ApplyPendingRestore(FileSystem.AppDataDirectory);
     Check(File.Exists(Path.Combine(FileSystem.AppDataDirectory, "pos.db")), "Restauración programada");
-    Console.WriteLine("OK: catálogo, precios, disponibilidad, cálculo, venta, cancelación, migración, borradores y respaldo");
+    Console.WriteLine("OK: coordinación de inicio, catálogo, precios, disponibilidad, cálculo, venta, cancelación, migración, borradores y respaldo");
 }
 finally
 {

@@ -14,7 +14,8 @@ public partial class MainPage : ContentPage
     private readonly BackupService _backupService;
     private OpenverseImageResult? _selectedOpenverseImage;
     private CancellationTokenSource? _openverseSearchCancellation;
-    private bool _loaded;
+    private bool _isProductConfiguratorOpen;
+    private ProductConfiguratorPage? _activeProductConfigurator;
 
     private enum KeypadTarget
     {
@@ -57,24 +58,41 @@ public partial class MainPage : ContentPage
         PaymentOverlay.IsVisible = false;
     }
 
-    protected override async void OnAppearing()
+    protected override void OnAppearing()
     {
         base.OnAppearing();
-        _dialogService.Attach(Navigation);
+        StartupLog.Write("MainPage appearing");
+        _dialogService.Attach(this);
+    }
 
-        if (_loaded)
-            return;
+    public Task ShowStartupErrorAsync(Exception exception) =>
+        DisplayAlert("No se pudo iniciar el POS", exception.Message, "Cerrar");
 
-        _loaded = true;
+    public async Task<ProductSelection?> ShowProductConfiguratorAsync(HeladeriaPOS.Models.Product product, IReadOnlyList<HeladeriaPOS.Models.Flavor> flavors)
+    {
+        if (_isProductConfiguratorOpen)
+            return null;
+
+        _isProductConfiguratorOpen = true;
         try
         {
-            await _viewModel.LoadAsync();
+            var configurator = new ProductConfiguratorPage(product, flavors, (title, message) => DisplayAlert(title, message, "Aceptar"));
+            _activeProductConfigurator = configurator;
+            ProductConfiguratorContent.Content = configurator;
+            ProductConfiguratorOverlay.IsVisible = true;
+            return await configurator.WaitForResultAsync();
         }
-        catch (Exception ex)
+        finally
         {
-            await DisplayAlert("No se pudo iniciar el POS", ex.Message, "Cerrar");
+            ProductConfiguratorOverlay.IsVisible = false;
+            ProductConfiguratorContent.Content = null;
+            _activeProductConfigurator = null;
+            _isProductConfiguratorOpen = false;
         }
     }
+
+    private void OnProductConfiguratorBackdropTapped(object? sender, TappedEventArgs e) =>
+        _activeProductConfigurator?.Cancel();
 
     protected override void OnDisappearing()
     {
@@ -87,8 +105,24 @@ public partial class MainPage : ContentPage
         if (width <= 0 || MainContent is null || ProductGridLayout is null)
             return;
 
+        if (height > 0 && ProductConfiguratorCard is not null)
+        {
+            ProductConfiguratorCard.WidthRequest = Math.Min(920, width * 0.86);
+            ProductConfiguratorCard.HeightRequest = Math.Min(820, height * 0.88);
+        }
+
         double sidebarWidth = width < 1250 ? 420 : 460;
         MainContent.ColumnDefinitions[1].Width = new GridLength(sidebarWidth);
+
+        bool compact = width < 1024;
+        double categoryFontSize = compact ? 13 : 17;
+        Thickness categoryPadding = compact ? new Thickness(8) : new Thickness(16, 10);
+        foreach (Button categoryButton in new[] { HeladosCategoryButton, SnacksCategoryButton, SpecialtiesCategoryButton })
+        {
+            categoryButton.FontSize = categoryFontSize;
+            categoryButton.Padding = categoryPadding;
+        }
+        PaymentCard.Margin = compact ? new Thickness(16) : new Thickness(32);
 
         double catalogWidth = width - sidebarWidth - 56;
         int span = catalogWidth >= 1000 ? 4 : catalogWidth >= 660 ? 3 : 2;
