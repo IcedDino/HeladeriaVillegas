@@ -6,7 +6,8 @@ namespace HeladeriaPOS.Services;
 public sealed class OrderDraftService
 {
     private readonly string _directory = Path.Combine(FileSystem.AppDataDirectory, "Drafts");
-    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+    private static readonly JsonSerializerOptions JsonOptions = new() { IgnoreReadOnlyProperties = true };
+    private string? _lastCurrentJson;
 
     public sealed class Draft
     {
@@ -31,7 +32,14 @@ public sealed class OrderDraftService
 
     public Draft? LoadHeld(string name) => Load(Path.Combine(_directory, "held_" + SafeFileName(name) + ".json"));
 
-    public void SaveCurrent(Draft draft) => Save(Path.Combine(_directory, "current.json"), draft);
+    public void SaveCurrent(Draft draft)
+    {
+        string path = Path.Combine(_directory, "current.json");
+        string json = JsonSerializer.Serialize(draft, JsonOptions);
+        if (json == _lastCurrentJson && File.Exists(path)) return;
+        SaveJson(path, json);
+        _lastCurrentJson = json;
+    }
 
     public void Hold(Draft draft)
     {
@@ -40,7 +48,11 @@ public sealed class OrderDraftService
     }
 
     public void DeleteHeld(string name) => File.Delete(Path.Combine(_directory, "held_" + SafeFileName(name) + ".json"));
-    public void ClearCurrent() => File.Delete(Path.Combine(_directory, "current.json"));
+    public void ClearCurrent()
+    {
+        File.Delete(Path.Combine(_directory, "current.json"));
+        _lastCurrentJson = null;
+    }
 
     private static string SafeFileName(string value) => new(value.Where(c => char.IsLetterOrDigit(c) || c is '-' or '_').ToArray());
 
@@ -51,10 +63,13 @@ public sealed class OrderDraftService
     }
 
     private static void Save(string path, Draft draft)
+        => SaveJson(path, JsonSerializer.Serialize(draft, JsonOptions));
+
+    private static void SaveJson(string path, string json)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         string temporary = path + ".tmp";
-        File.WriteAllText(temporary, JsonSerializer.Serialize(draft, JsonOptions));
+        File.WriteAllText(temporary, json);
         File.Move(temporary, path, true);
     }
 }

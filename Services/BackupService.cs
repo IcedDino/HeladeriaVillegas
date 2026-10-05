@@ -2,10 +2,17 @@ using Microsoft.Data.Sqlite;
 
 namespace HeladeriaPOS.Services;
 
-public sealed class BackupService
+public sealed class BackupService : IDisposable
 {
+    public static readonly TimeSpan AutomaticBackupInterval = TimeSpan.FromHours(12);
+    private readonly TimeProvider _clock;
+    private readonly object _gate = new();
+    private readonly CancellationTokenSource _stop = new();
+    private Task? _automaticTask;
     private readonly string _database = Path.Combine(FileSystem.AppDataDirectory, "pos.db");
     private readonly string _backupDirectory = Path.Combine(FileSystem.AppDataDirectory, "Backups");
+
+    public BackupService(TimeProvider? clock = null) => _clock = clock ?? TimeProvider.System;
 
     public string BackupDirectoryPath => _backupDirectory;
 
@@ -19,38 +26,72 @@ public sealed class BackupService
         }
     }
 
-    public bool HasTodayBackup
+    public string CreateBackup()
     {
-        get
+        lock (_gate) return CreateBackupCore();
+    }
+
+    private string CreateBackupCore()
+    {
+        Directory.CreateDirectory(_backupDirectory);
+        string path = Path.Combine(_backupDirectory, $"pos_{_clock.GetLocalNow():yyyyMMdd_HHmmssfff}_{Guid.NewGuid():N}.db");
+        string temporary = path + ".tmp";
+        try
         {
-            if (!Directory.Exists(_backupDirectory))
-                return false;
-            return Directory.GetFiles(_backupDirectory, $"pos_{DateTime.Now:yyyyMMdd}_*.db").Length > 0;
+            using (var source = new SqliteConnection($"Data Source={_database};Mode=ReadOnly;Pooling=False"))
+            using (var destination = new SqliteConnection($"Data Source={temporary};Pooling=False"))
+            {
+                source.Open();
+                destination.Open();
+                source.BackupDatabase(destination);
+                using var check = destination.CreateCommand();
+                check.CommandText = "PRAGMA integrity_check;";
+                if (!string.Equals(check.ExecuteScalar()?.ToString(), "ok", StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidDataException("La copia no superó la verificación de integridad.");
+            }
+            File.SetLastWriteTimeUtc(temporary, _clock.GetUtcNow().UtcDateTime);
+            File.Move(temporary, path);
+            return path;
+        }
+        finally { if (File.Exists(temporary)) File.Delete(temporary); }
+    }
+
+    public string? BackupIfDue()
+    {
+        lock (_gate)
+        {
+            DateTime? latest = Directory.Exists(_backupDirectory)
+                ? Directory.EnumerateFiles(_backupDirectory, "pos_*.db").Select(File.GetLastWriteTimeUtc)
+                    .Select(time => (DateTime?)time).Max()
+                : null;
+            if (latest is not null && _clock.GetUtcNow().UtcDateTime - latest.Value < AutomaticBackupInterval)
+                return null;
+            return CreateBackupCore();
         }
     }
 
-    public string CreateBackup()
+    public void StartAutomaticBackups(Action<Exception> onError)
     {
-        Directory.CreateDirectory(_backupDirectory);
-        string path = Path.Combine(_backupDirectory, $"pos_{DateTime.Now:yyyyMMdd_HHmmss}.db");
-        using var source = new SqliteConnection($"Data Source={_database};Mode=ReadOnly");
-        using var destination = new SqliteConnection($"Data Source={path}");
-        source.Open();
-        destination.Open();
-        source.BackupDatabase(destination);
-        using var check = destination.CreateCommand();
-        check.CommandText = "PRAGMA integrity_check;";
-        if (!string.Equals(check.ExecuteScalar()?.ToString(), "ok", StringComparison.OrdinalIgnoreCase))
-            throw new InvalidDataException("La copia no superó la verificación de integridad.");
-        return path;
+        lock (_gate)
+        {
+            if (_automaticTask is not null) return;
+            _automaticTask = Task.Run(async () =>
+            {
+                using var timer = new PeriodicTimer(TimeSpan.FromMinutes(1));
+                try
+                {
+                    do
+                    {
+                        try { BackupIfDue(); }
+                        catch (Exception exception) { onError(exception); }
+                    } while (await timer.WaitForNextTickAsync(_stop.Token));
+                }
+                catch (OperationCanceledException) when (_stop.IsCancellationRequested) { }
+            });
+        }
     }
 
-    public void BackupOncePerDay()
-    {
-        Directory.CreateDirectory(_backupDirectory);
-        if (Directory.GetFiles(_backupDirectory, $"pos_{DateTime.Now:yyyyMMdd}_*.db").Length == 0)
-            CreateBackup();
-    }
+    public void Dispose() => _stop.Cancel();
 
     public void ScheduleRestore(string backupPath)
     {

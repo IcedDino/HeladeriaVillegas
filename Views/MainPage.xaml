@@ -66,14 +66,13 @@
        
         <Border Style="{StaticResource PanelStyle}" Padding="12">
             <Grid x:Name='Catalogue' RowDefinitions="Auto,Auto,*" RowSpacing="8">
-                <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
+                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
                     <VerticalStackLayout>
                         <Label Text="Heladería POS" FontSize="23" FontAttributes="Bold" />
                         <Label Text="{Binding StatusMessage}" FontSize="12" TextColor="{StaticResource TextSecondary}" />
                     </VerticalStackLayout>
-                    <Button Grid.Column="1" Text="Ventas" Clicked="OnSalesClicked" Style="{StaticResource TouchButtonStyle}" />
-                    <Button Grid.Column="2" Text="Precios" Clicked="OnPricesClicked" Style="{StaticResource TouchButtonStyle}" />
-                    <Button Grid.Column="3" Text="Respaldo" Clicked="OnBackupClicked" Style="{StaticResource TouchButtonStyle}" />
+                    <Button Grid.Column="1" Text="Ventas" Clicked="OnSalesClicked" Style="{StaticResource TouchButtonStyle}" TextColor="{StaticResource BrandDarkRed}" BackgroundColor="#FFF0F3" />
+                    <Button Grid.Column="2" Text="Precios" Clicked="OnPricesClicked" Style="{StaticResource TouchButtonStyle}" TextColor="{StaticResource BrandDarkRed}" BackgroundColor="#FFF0F3" />
                 </Grid>
                 
                 <!--Categories -->
@@ -144,12 +143,17 @@
         <Border Grid.Column="1" Style="{StaticResource PanelStyle}" Padding="12">
             <Grid RowDefinitions="*,Auto,Auto" RowSpacing="10">
                 <Grid RowDefinitions="Auto,*,Auto" RowSpacing="8">
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                        <Label Text="{Binding OrderNumber}" FontSize="15" FontAttributes="Bold" LineBreakMode="TailTruncation" MaxLines="1" />
-                        <Border Grid.Column="1" BackgroundColor="#F2F3FF" StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="10,4" VerticalOptions="Center">
-                            <Label Text="{Binding CartItemCountDisplay}" FontSize="11" FontAttributes="Bold" TextColor="#283044" VerticalOptions="Center" />
-                        </Border>
-                    </Grid>
+                    <VerticalStackLayout Spacing="8">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <Label Text="{Binding OrderNumber}" FontSize="15" FontAttributes="Bold" LineBreakMode="TailTruncation" MaxLines="1" />
+                            <Border Grid.Column="1" BackgroundColor="#F2F3FF" StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="10,4" VerticalOptions="Center">
+                                <Label Text="{Binding CartItemCountDisplay}" FontSize="11" FontAttributes="Bold" TextColor="#283044" VerticalOptions="Center" />
+                            </Border>
+                        </Grid>
+                        <Button Text="Poner en espera" Clicked="OnHoldOrderClicked" IsEnabled="{Binding HasItemsInCart}"
+                                HeightRequest="56" FontSize="15" FontAttributes="Bold" BackgroundColor="{StaticResource BrandDarkRed}"
+                                TextColor="White" CornerRadius="12" SemanticProperties.Description="Guardar el ticket actual en espera y comenzar otra orden" />
+                    </VerticalStackLayout>
 
                     <CollectionView Grid.Row="1" ItemsSource="{Binding Cart}" SelectionMode="None">
                         <CollectionView.EmptyView>
@@ -193,14 +197,14 @@
                                 <Label Text="Extras y toppings" FontSize="13" TextColor="#5C6477" />
                                 <Label Grid.Column="1" Text="{Binding TotalExtrasDisplay}" FontSize="15" FontAttributes="Bold" />
                             </Grid>
-                            <Grid ColumnDefinitions="*,90" ColumnSpacing="6">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
                                 <Label Text="Descuento" FontSize="13" TextColor="{StaticResource CheckoutGreen}" VerticalOptions="Center" />
-                                <Border Grid.Column="1" BackgroundColor="#F2F3FF" StrokeThickness="0" StrokeShape="RoundRectangle 10" MinimumHeightRequest="44">
-                                    <Border.GestureRecognizers><TapGestureRecognizer Tapped="OnDiscountTapped" /></Border.GestureRecognizers>
-                                    <Label x:Name="DiscountEntry" Text="{Binding DiscountInput, StringFormat='$ {0}'}" FontSize="16" FontAttributes="Bold"
-                                           TextColor="{StaticResource TextPrimary}" HorizontalTextAlignment="End" Padding="12,0" VerticalTextAlignment="Center"
-                                           SemanticProperties.Description="Descuento en pesos. Toca para abrir el teclado numérico." />
-                                </Border>
+                                <Entry Grid.Column="1" Text="{Binding DiscountInput, Mode=TwoWay}" Keyboard="Numeric" Placeholder="$0"
+                                       Style="{StaticResource TouchEntryStyle}" FontSize="16" HorizontalTextAlignment="End"
+                                       SemanticProperties.Description="Importe del descuento en pesos" />
+                                <Button Grid.Column="2" Text="Editar" Clicked="OnDiscountClicked" HeightRequest="48" Padding="12,0"
+                                        BackgroundColor="#EAF7F1" TextColor="{StaticResource CheckoutGreen}"
+                                        SemanticProperties.Description="Abrir teclado para introducir descuento en pesos" />
                             </Grid>
                             <Entry Text="{Binding DiscountReason, Mode=TwoWay}" Placeholder="Motivo del descuento" Style="{StaticResource TouchEntryStyle}" FontSize="14" IsVisible="True" />
                             <BoxView HeightRequest="1" Color="#DAE2FD" />
@@ -267,7 +271,7 @@
                 </Border.GestureRecognizers>
                 <VerticalStackLayout Spacing="14">
                     <Label x:Name="KeypadTitle" Text="EFECTIVO RECIBIDO" FontSize="13" CharacterSpacing="1" FontAttributes="Bold" TextColor="#5C6477" />
-                    <Label Text="{Binding ReceivedCashInput, StringFormat='${0}'}" FontSize="38" FontAttributes="Bold"
+                    <Label x:Name="KeypadValueText" Text="$0" FontSize="38" FontAttributes="Bold"
                            HorizontalTextAlignment="End" TextColor="{StaticResource BrandRed}" />
 
                     <Grid RowDefinitions="64,64,64,64" ColumnDefinitions="*,*,*" RowSpacing="10" ColumnSpacing="10">
@@ -501,7 +505,7 @@
                         <!-- Left: datos de pago -->
                         <VerticalStackLayout Spacing="12">
                             <Label Text="Método de pago" FontSize="15" FontAttributes="Bold" />
-                            <Grid ColumnDefinitions="*,*" RowDefinitions="58,58" ColumnSpacing="10" RowSpacing="10">
+                            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12" Padding="4" Margin="0,0,0,12">
                                 <Button Text="Efectivo" Style="{StaticResource PaymentChipStyle}" Command="{Binding SelectPaymentCommand}" CommandParameter="Cash">
                                     <Button.Triggers>
                                         <DataTrigger TargetType="Button" Binding="{Binding IsCashSelected}" Value="True">
@@ -547,17 +551,40 @@
                                         </Grid>
                                     </Border>
 
-                                    <Label Text="BILLETES" FontSize="11" FontAttributes="Bold" CharacterSpacing="1" TextColor="#5C6477" />
-                                    <Grid ColumnDefinitions="*,*,*" RowDefinitions="50,50" ColumnSpacing="8" RowSpacing="8">
-                                        <Button Text="Exacto" Style="{StaticResource BillKeyStyle}" Command="{Binding ApplyQuickCashCommand}" CommandParameter="Exacto" BackgroundColor="#DDF8EA" TextColor="#006C4A" />
-                                        <Button Grid.Column="1" Text="+$20" Style="{StaticResource BillKeyStyle}" Command="{Binding ApplyQuickCashCommand}" CommandParameter="20" />
-                                        <Button Grid.Column="2" Text="+$50" Style="{StaticResource BillKeyStyle}" Command="{Binding ApplyQuickCashCommand}" CommandParameter="50" />
-                                        <Button Grid.Row="1" Text="+$100" Style="{StaticResource BillKeyStyle}" Command="{Binding ApplyQuickCashCommand}" CommandParameter="100" />
-                                        <Button Grid.Row="1" Grid.Column="1" Text="+$200" Style="{StaticResource BillKeyStyle}" Command="{Binding ApplyQuickCashCommand}" CommandParameter="200" />
-                                        <Button Grid.Row="1" Grid.Column="2" Text="+$500" Style="{StaticResource BillKeyStyle}" Command="{Binding ApplyQuickCashCommand}" CommandParameter="500" />
+                                    <Label Text="AGREGAR BILLETES" FontSize="11" FontAttributes="Bold" CharacterSpacing="1" TextColor="#5C6477" />
+                                    <Label Text="Cada toque suma un billete al efectivo recibido." FontSize="12" TextColor="#5C6477" />
+                                    <Grid ColumnDefinitions="*,*,*" RowDefinitions="96,96" ColumnSpacing="8" RowSpacing="8">
+                                        <Grid x:Name="Bill20Slot" Grid.Row="0" Grid.Column="0">
+                                            <ImageButton Source="bill_mxn_20.png" Aspect="AspectFit" HeightRequest="90" Padding="2" BackgroundColor="White" CornerRadius="8"
+                                                         Command="{Binding ApplyQuickCashCommand}" CommandParameter="20" SemanticProperties.Description="Agregar un billete de 20 pesos" />
+                                        </Grid>
+                                        <Grid x:Name="Bill50Slot" Grid.Row="0" Grid.Column="1">
+                                            <ImageButton Source="bill_mxn_50.png" Aspect="AspectFit" Rotation="270" WidthRequest="90" HeightRequest="{Binding Width, Source={x:Reference Bill50Slot}, x:DataType=Grid}" HorizontalOptions="Center" VerticalOptions="Center" Padding="2" BackgroundColor="White" CornerRadius="8"
+                                                         Command="{Binding ApplyQuickCashCommand}" CommandParameter="50" SemanticProperties.Description="Agregar un billete de 50 pesos" />
+                                        </Grid>
+                                        <Grid x:Name="Bill100Slot" Grid.Row="0" Grid.Column="2">
+                                            <ImageButton Source="bill_mxn_100.png" Aspect="AspectFit" Rotation="270" WidthRequest="90" HeightRequest="{Binding Width, Source={x:Reference Bill100Slot}, x:DataType=Grid}" HorizontalOptions="Center" VerticalOptions="Center" Padding="2" BackgroundColor="White" CornerRadius="8"
+                                                         Command="{Binding ApplyQuickCashCommand}" CommandParameter="100" SemanticProperties.Description="Agregar un billete de 100 pesos" />
+                                        </Grid>
+                                        <Grid x:Name="Bill200Slot" Grid.Row="1" Grid.Column="0">
+                                            <ImageButton Source="bill_mxn_200.png" Aspect="AspectFit" HeightRequest="90" Padding="2" BackgroundColor="White" CornerRadius="8"
+                                                         Command="{Binding ApplyQuickCashCommand}" CommandParameter="200" SemanticProperties.Description="Agregar un billete de 200 pesos" />
+                                        </Grid>
+                                        <Grid x:Name="Bill500Slot" Grid.Row="1" Grid.Column="1">
+                                            <ImageButton Source="bill_mxn_500.png" Aspect="AspectFit" HeightRequest="90" Padding="2" BackgroundColor="White" CornerRadius="8"
+                                                         Command="{Binding ApplyQuickCashCommand}" CommandParameter="500" SemanticProperties.Description="Agregar un billete de 500 pesos" />
+                                        </Grid>
+                                        <Grid x:Name="Bill1000Slot" Grid.Row="1" Grid.Column="2">
+                                            <ImageButton Source="bill_mxn_1000.png" Aspect="AspectFit" HeightRequest="90" Padding="2" BackgroundColor="White" CornerRadius="8"
+                                                         Command="{Binding ApplyQuickCashCommand}" CommandParameter="1000" SemanticProperties.Description="Agregar un billete de 1000 pesos" />
+                                        </Grid>
                                     </Grid>
-                                    <Button Text="Limpiar efectivo" Command="{Binding ApplyQuickCashCommand}" CommandParameter="Limpiar" HeightRequest="44"
-                                            CornerRadius="12" FontSize="14" FontAttributes="Bold" BackgroundColor="#FFDAD6" TextColor="#93000A" />
+                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                        <Button Text="Efectivo exacto" Command="{Binding ApplyQuickCashCommand}" CommandParameter="Exacto" HeightRequest="44"
+                                                CornerRadius="12" FontSize="13" FontAttributes="Bold" BackgroundColor="#DDF8EA" TextColor="#006C4A" />
+                                        <Button Grid.Column="1" Text="Limpiar efectivo" Command="{Binding ApplyQuickCashCommand}" CommandParameter="Limpiar" HeightRequest="44"
+                                                CornerRadius="12" FontSize="13" FontAttributes="Bold" BackgroundColor="#FFDAD6" TextColor="#93000A" />
+                                    </Grid>
                                 </VerticalStackLayout>
                             </Border>
 

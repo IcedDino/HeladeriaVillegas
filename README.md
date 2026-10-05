@@ -5,18 +5,19 @@ Punto de venta táctil para Windows con .NET MAUI 8, SQLite y funcionamiento loc
 ## Uso en caja
 
 - Selecciona categoría y producto. El configurador muestra el precio final antes de agregarlo.
-- En helados y especialidades, elige sabores disponibles e indica instrucciones de preparación.
+- En helados y especialidades, los sabores son opcionales. Puedes agregar y cobrar sin elegir sabor; si lo eliges, se guarda en el ticket.
 - Ajusta cantidades con `+` y `−`. El ticket en curso se guarda automáticamente y se recupera al abrir la aplicación.
-- `En espera` guarda la orden actual para atender otra. `Recuperar` vuelve a abrirla.
+- `Poner orden en espera` guarda el ticket actual y deja una nueva orden vacía para atender otra. `En espera` abre la lista para recuperar las órdenes guardadas.
 - `Cancelar` pide confirmación; `Deshacer cancelación` restaura la última orden vaciada mientras la aplicación siga abierta.
-- Elige efectivo, tarjeta, transferencia o pago mixto. En efectivo se calcula el cambio. Los descuentos requieren motivo y no pueden cubrir todo el subtotal.
+- Elige efectivo, tarjeta, transferencia o pago mixto. En efectivo se calcula el cambio. Introduce el importe del descuento en el campo `Descuento` o con su botón `Editar`, y escribe el motivo. El total se actualiza al cambiar el importe. Los descuentos no pueden cubrir todo el subtotal.
+- En el cobro, toca la imagen de cada billete ($20, $50, $100, $200, $500 o $1,000) para sumarlo al efectivo recibido. Puedes tocar varias veces, introducir un importe con el teclado o limpiar el efectivo. `Efectivo exacto` cubre el saldo pendiente, descontando tarjeta y transferencia en un pago mixto.
 - `Ventas` muestra historial diario, corte por método, cancelación con motivo y reimpresión.
 - `Precios` permite cambiar precios y marcar productos o sabores como no disponibles. Los cambios persisten después de reiniciar.
-- `Respaldo` crea una copia SQLite verificada o prepara una restauración. La restauración se aplica al siguiente inicio y guarda antes la base anterior en `BeforeRestore`.
+- Los respaldos SQLite se crean y verifican automáticamente cada 12 horas mientras la app está abierta. Al iniciar se hace uno si no hay copia o ya venció el intervalo; los fallos se reintentan cada minuto. Solo las copias que pasan la verificación cuentan como respaldo completado.
 
 ## Datos y respaldos
 
-La base `pos.db`, las órdenes en espera, las imágenes y los respaldos se guardan en `FileSystem.AppDataDirectory` de MAUI. La aplicación crea un respaldo por día al iniciar. Copia periódicamente la carpeta `Backups` a una USB u otro equipo; las copias en el mismo disco no protegen de una falla física.
+La base `pos.db`, las órdenes en espera, las imágenes y los respaldos se guardan en `FileSystem.AppDataDirectory` de MAUI. Las copias automáticas quedan en `Backups`. Copia periódicamente esa carpeta a una USB u otro equipo; las copias en el mismo disco no protegen de una falla física.
 
 Al restaurar, cierra y abre de nuevo la aplicación. Revisa el historial antes de volver a vender.
 

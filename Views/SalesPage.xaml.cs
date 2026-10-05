@@ -84,8 +84,8 @@ public sealed partial class SalesPage : ContentPage
 
     private async void OnTodayClicked(object? sender, EventArgs e)
     {
-        SalesDatePicker.Date = DateTime.Today;
-        await ReloadAsync();
+        if (SalesDatePicker.Date.Date == DateTime.Today) await ReloadAsync();
+        else SalesDatePicker.Date = DateTime.Today;
     }
 
     private async Task ReloadAsync()

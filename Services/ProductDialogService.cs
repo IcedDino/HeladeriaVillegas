@@ -17,7 +17,8 @@ public sealed class ProductDialogService : IProductDialogService
         if (_hostPage is null)
             throw new InvalidOperationException("La pantalla principal todavía no está disponible.");
 
-        IReadOnlyList<Flavor> flavors = await _tickets.GetFlavorsAsync(true);
+        IReadOnlyList<Flavor> flavors = product.Category is ProductCategory.Helados or ProductCategory.Especialidades
+            ? await _tickets.GetFlavorsAsync(true) : Array.Empty<Flavor>();
         return await _hostPage.ShowProductConfiguratorAsync(product, flavors);
     }
 }

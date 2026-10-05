@@ -96,7 +96,6 @@
                 </Border>
                 <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
                     <Label x:Name="ProductNameText" FontSize="25" FontAttributes="Bold" TextColor="{StaticResource BrandRed}" LineBreakMode="TailTruncation" MaxLines="1" />
-                    <Label x:Name="BaseHintText" FontSize="13" TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" />
                 </VerticalStackLayout>
             </Grid>
         </Border>
@@ -153,7 +152,7 @@
                 <!-- Barquillo / Vaso: tamaño -->
                 <Border x:Name="CupSizeSection" IsVisible="False" Style="{StaticResource SectionCard}">
                     <VerticalStackLayout Spacing="12">
-                        <Label Text="Tamaño obligatorio" Style="{StaticResource SectionTitle}" />
+                        <Label Text="Tamaño" Style="{StaticResource SectionTitle}" />
                         <FlexLayout Wrap="Wrap" Direction="Row" JustifyContent="Start" AlignItems="Start">
                             <Button x:Name="SizeSmallChip" Text="Chico" AutomationId="IceCreamSize|Chico" Style="{StaticResource ChipStyle}" Margin="0,0,8,8" />
                             <Button x:Name="SizeMediumChip" Text="Mediano" AutomationId="IceCreamSize|Mediano" Style="{StaticResource ChipStyle}" Margin="0,0,8,8" />
@@ -166,7 +165,7 @@
                 <!-- Canasta: tamaño -->
                 <Border x:Name="BasketSizeSection" IsVisible="False" Style="{StaticResource SectionCard}">
                     <VerticalStackLayout Spacing="12">
-                        <Label Text="Tamaño obligatorio" Style="{StaticResource SectionTitle}" />
+                        <Label Text="Tamaño" Style="{StaticResource SectionTitle}" />
                         <FlexLayout Wrap="Wrap" Direction="Row" JustifyContent="Start" AlignItems="Start">
                             <Button x:Name="SizeDoubleChip" Text="Doble" AutomationId="IceCreamSize|Doble" Style="{StaticResource ChipStyle}" Margin="0,0,8,8" />
                             <Button x:Name="SizeTripleChip" Text="Triple" AutomationId="IceCreamSize|Triple" Style="{StaticResource ChipStyle}" Margin="0,0,8,8" />
@@ -203,7 +202,7 @@
                 <!-- Envase / Bote: tamaño + ingredientes -->
                 <Border x:Name="ContainerSizeSection" IsVisible="False" Style="{StaticResource SectionCard}">
                     <VerticalStackLayout Spacing="12">
-                        <Label Text="Tamaño obligatorio" Style="{StaticResource SectionTitle}" />
+                        <Label Text="Tamaño" Style="{StaticResource SectionTitle}" />
                         <FlexLayout Wrap="Wrap" Direction="Row" JustifyContent="Start" AlignItems="Start">
                             <Button x:Name="SizeHalfLiterChip" Text="Medio litro" AutomationId="IceCreamSize|MedioLitro" Style="{StaticResource ChipStyle}" Margin="0,0,8,8" />
                             <Button x:Name="SizeOneLiterChip" Text="1 litro" AutomationId="IceCreamSize|UnLitro" Style="{StaticResource ChipStyle}" Margin="0,0,8,8" />
@@ -228,7 +227,7 @@
                 <!-- Especialidades: chantilly + otros ingredientes -->
                 <Border x:Name="SpecialtySection" IsVisible="False" Style="{StaticResource SectionCard}">
                     <VerticalStackLayout Spacing="12">
-                        <Label Text="Extras opcionales" Style="{StaticResource SectionTitle}" />
+                        <Label Text="Extras" Style="{StaticResource SectionTitle}" />
                         <Grid x:Name="ChantillyRow" ColumnDefinitions="Auto,*" ColumnSpacing="14" MinimumHeightRequest="60" Padding="2,4">
                             <Grid.GestureRecognizers>
                                 <TapGestureRecognizer Tapped="ChantillyRowTapped" />
@@ -256,7 +255,7 @@
                 <!-- Producto custom: extra configurable -->
                 <Border x:Name="CustomExtrasSection" IsVisible="False" Style="{StaticResource SectionCard}">
                     <VerticalStackLayout Spacing="12">
-                        <Label Text="Extras opcionales" Style="{StaticResource SectionTitle}" />
+                        <Label Text="Extras" Style="{StaticResource SectionTitle}" />
                         <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="10">
                             <VerticalStackLayout Spacing="2" VerticalOptions="Center">
                                 <Label x:Name="CustomExtraNameText" Text="Extra" Style="{StaticResource OptionTitle}" />
@@ -275,7 +274,6 @@
                 <Border x:Name="FlavorSection" IsVisible="False" Style="{StaticResource SectionCard}">
                     <VerticalStackLayout Spacing="12">
                         <Label Text="Sabores" Style="{StaticResource SectionTitle}" />
-                        <Label Text="Toca los sabores disponibles para elegirlos. Toca de nuevo para quitarlos." Style="{StaticResource OptionHint}" />
                         <FlexLayout x:Name="FlavorChips" Wrap="Wrap" Direction="Row" JustifyContent="Start" AlignItems="Start" />
 
                         <Border BackgroundColor="#F7EDF1" StrokeThickness="0" StrokeShape="RoundRectangle 14" Padding="12,10">
@@ -285,7 +283,6 @@
                                         FontSize="14" FontAttributes="Bold" BackgroundColor="#FFDAD6" TextColor="#93000A" VerticalOptions="Center" />
                             </Grid>
                         </Border>
-                        <Entry x:Name="InstructionsEntry" Placeholder="Ej. sin nuez, poco jarabe" Style="{StaticResource TouchEntryStyle}" MaxLength="300" />
                     </VerticalStackLayout>
                 </Border>
             </VerticalStackLayout>

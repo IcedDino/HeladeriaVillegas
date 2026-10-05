@@ -7,5 +7,5 @@ Write-Host "Restaurando paquetes..." -ForegroundColor Cyan
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Host "Compilando y ejecutando Heladería POS MAUI..." -ForegroundColor Cyan
-& $Dotnet build .\HeladeriaPOS.Maui.csproj -t:Run -f net8.0-windows10.0.19041.0 -c Debug -p:RuntimeIdentifier=win-x64 -p:WindowsPackageType=None
+& $Dotnet build .\HeladeriaPOS.Maui.csproj -t:Run -f net8.0-windows10.0.19041.0 -c Debug -p:Platform=x64 -p:RuntimeIdentifier=win-x64 -p:WindowsPackageType=None
 exit $LASTEXITCODE

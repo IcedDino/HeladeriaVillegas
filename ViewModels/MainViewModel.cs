@@ -178,8 +178,11 @@ public partial class MainViewModel : ObservableObject
 
         try
         {
-            await _databaseInitializer.InitializeAsync();
-            List<Product> products = await _ticketService.GetProductsAsync();
+            List<Product> products = await Task.Run(async () =>
+            {
+                await _databaseInitializer.InitializeAsync();
+                return await _ticketService.GetProductsAsync();
+            });
 
             Products.Clear();
             for (int i = 0; i < products.Count; i++)
@@ -196,8 +199,8 @@ public partial class MainViewModel : ObservableObject
             _loaded = true;
             RefreshHeldOrders();
             StatusMessage = draft is null ? "Listo para vender" : $"Orden {OrderNumber} recuperada";
-            try { _backupService.BackupOncePerDay(); }
-            catch (Exception ex) { StatusMessage += $" · Respaldo pendiente: {ex.Message}"; }
+            _backupService.StartAutomaticBackups(ex => MainThread.BeginInvokeOnMainThread(() =>
+                StatusMessage = $"Respaldo pendiente: {ex.Message}"));
         }
         catch (Exception ex)
         {
@@ -301,7 +304,6 @@ public partial class MainViewModel : ObservableObject
         NotifyCartStateChanged();
         CalculateTotal();
         StatusMessage = $"{productCard.Name} agregado al ticket";
-        SaveDraft();
     }
 
     private void RemoveItem(OrderItemViewModel item)
@@ -310,14 +312,12 @@ public partial class MainViewModel : ObservableObject
         NotifyCartStateChanged();
         CalculateTotal();
         StatusMessage = "Partida eliminada";
-        SaveDraft();
     }
 
     partial void OnDiscountInputChanged(string value)
     {
         DiscountApplied = ParseMoney(value);
         CalculateTotal();
-        SaveDraft();
     }
 
     partial void OnReceivedCashInputChanged(string value)
@@ -376,7 +376,7 @@ public partial class MainViewModel : ObservableObject
     private void CalculateChange()
     {
         decimal received = ParseMoney(ReceivedCashInput);
-        decimal dueFromCash = Math.Max(0m, Total - (PaymentMethod == HeladeriaPOS.Models.PaymentMethod.Mixed ? ParseMoney(CardInput) + ParseMoney(TransferInput) : 0m));
+        decimal dueFromCash = CashPaymentCalculator.AmountDue(Total, ParseMoney(CardInput), ParseMoney(TransferInput), IsMixedPayment);
         Change = IsCashPayment && received > dueFromCash ? received - dueFromCash : 0m;
     }
 
@@ -464,24 +464,9 @@ public partial class MainViewModel : ObservableObject
     {
         if (string.IsNullOrWhiteSpace(parameter))
             return;
-
-        if (string.Equals(parameter, "Exacto", StringComparison.OrdinalIgnoreCase))
-        {
-            ReceivedCashInput = Total.ToString("0.##", CultureInfo.InvariantCulture);
-            return;
-        }
-
-        if (string.Equals(parameter, "Limpiar", StringComparison.OrdinalIgnoreCase))
-        {
-            ReceivedCashInput = "0";
-            return;
-        }
-
-        if (decimal.TryParse(parameter, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal amount))
-        {
-            decimal current = ParseMoney(ReceivedCashInput);
-            ReceivedCashInput = (current + amount).ToString("0.##", CultureInfo.InvariantCulture);
-        }
+        decimal due = CashPaymentCalculator.AmountDue(Total, ParseMoney(CardInput), ParseMoney(TransferInput), IsMixedPayment);
+        ReceivedCashInput = CashPaymentCalculator.ApplyQuickCash(ParseMoney(ReceivedCashInput), due, parameter)
+            .ToString("0.##", CultureInfo.InvariantCulture);
     }
 
     [RelayCommand]
@@ -494,7 +479,6 @@ public partial class MainViewModel : ObservableObject
         NotifyCartStateChanged();
         CalculateTotal();
         StatusMessage = "Ticket vaciado";
-        SaveDraft();
     }
 
     [RelayCommand]
@@ -506,21 +490,27 @@ public partial class MainViewModel : ObservableObject
 
     private void CreateNewOrder()
     {
-        Cart.Clear();
-        SubtotalBase = 0m;
-        TotalExtras = 0m;
-        DiscountApplied = 0m;
-        DiscountInput = "0";
-        Total = 0m;
-        ReceivedCashInput = "0";
-        CardInput = "0";
-        TransferInput = "0";
-        DiscountReason = string.Empty;
-        PaymentMethod = HeladeriaPOS.Models.PaymentMethod.Cash;
-        Change = 0m;
-        OrderNumber = $"ORD-{DateTime.Now:yyyyMMdd-HHmmssfff}";
-        NotifyCartStateChanged();
-        CheckoutCommand?.NotifyCanExecuteChanged();
+        bool wasRestoring = _restoring;
+        _restoring = true;
+        try
+        {
+            Cart.Clear();
+            SubtotalBase = 0m;
+            TotalExtras = 0m;
+            DiscountApplied = 0m;
+            DiscountInput = "0";
+            Total = 0m;
+            ReceivedCashInput = "0";
+            CardInput = "0";
+            TransferInput = "0";
+            DiscountReason = string.Empty;
+            PaymentMethod = HeladeriaPOS.Models.PaymentMethod.Cash;
+            Change = 0m;
+            OrderNumber = $"ORD-{DateTime.Now:yyyyMMdd-HHmmssfff}";
+            NotifyCartStateChanged();
+            CheckoutCommand?.NotifyCanExecuteChanged();
+        }
+        finally { _restoring = wasRestoring; }
         SaveDraft();
     }
 
@@ -562,7 +552,7 @@ public partial class MainViewModel : ObservableObject
 
     public void HoldCurrentOrder()
     {
-        if (Cart.Count == 0) return;
+        if (Cart.Count == 0 || IsBusy) return;
         _draftService.Hold(Snapshot());
         CreateNewOrder();
         RefreshHeldOrders();

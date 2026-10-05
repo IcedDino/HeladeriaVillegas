@@ -173,19 +173,6 @@ public partial class ProductConfiguratorPage : ContentView
             ChantillyPriceText.Text = $"Crema Chantilly — +{Money("chantilly")}";
             SpecialExtraPriceText.Text = $"{Money("special_extra")} por unidad";
         }
-        BaseHintText.Text = _product.ProductType switch
-        {
-            ProductType.Custom => $"Precio base {_product.BasePrice.ToString("C", CultureInfo.GetCultureInfo("es-MX"))}.",
-            ProductType.PapasSabritas => "Elige Normal, preparado completo o sin algún ingrediente.",
-            ProductType.Fritura => "Precio fijo. La salsa está incluida por defecto.",
-            ProductType.SopaPalomitas => "Van normal o cocinadas.",
-            ProductType.Barquillo or ProductType.Vaso => "Selecciona un tamaño y agrega preparación o bolas extra si lo deseas.",
-            ProductType.Canasta => "Selecciona Doble o Triple y agrega modificadores si lo deseas.",
-            ProductType.Envase => "Selecciona ½ L, 1 L, 5 L o 12 L. En ½ L y 1 L puedes agregar ingredientes de preparación.",
-            ProductType.Malteada => "Malteada clásica. Puedes agregar Chantilly u otros ingredientes.",
-            _ => "Especialidad clásica. Puedes agregar Chantilly u otros ingredientes."
-        };
-
         bool isSnack = _product.Category == ProductCategory.Snacks;
         SnackExtrasSection.IsVisible = isSnack && _product.ProductType != ProductType.Custom;
 
@@ -235,11 +222,6 @@ public partial class ProductConfiguratorPage : ContentView
             await _showAlertAsync("Falta información", "Selecciona el tamaño antes de agregar el producto.");
             return;
         }
-        if (FlavorSection.IsVisible && _selectedFlavors.Count == 0)
-        {
-            await _showAlertAsync("Faltan sabores", "Selecciona al menos un sabor disponible.");
-            return;
-        }
 
         var selection = new ProductSelection
         {
@@ -252,8 +234,7 @@ public partial class ProductConfiguratorPage : ContentView
             PreparationExtraIngredientCount = _containerIngredientCount,
             Chantilly = ChantillyCheck.IsChecked,
             OtherIngredientCount = _otherIngredientCount,
-            Flavors = string.Join(", ", _selectedFlavors),
-            Instructions = InstructionsEntry.Text?.Trim()
+            Flavors = _selectedFlavors.Count == 0 ? null : string.Join(", ", _selectedFlavors)
         };
 
         _result.TrySetResult(selection);
@@ -380,7 +361,7 @@ public partial class ProductConfiguratorPage : ContentView
         }
         catch (InvalidOperationException)
         {
-            SelectedPriceText.Text = "Selecciona un tamaño para ver el total";
+            SelectedPriceText.Text = string.Empty;
         }
     }
 

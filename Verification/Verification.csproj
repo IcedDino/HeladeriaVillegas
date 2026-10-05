@@ -12,6 +12,7 @@
     <Compile Include="..\Models\*.cs" Link="Models\%(Filename)%(Extension)" />
     <Compile Include="..\Services\PriceCatalog.cs" Link="Services\PriceCatalog.cs" />
     <Compile Include="..\Services\PricingService.cs" Link="Services\PricingService.cs" />
+    <Compile Include="..\Services\CashPaymentCalculator.cs" Link="Services\CashPaymentCalculator.cs" />
     <Compile Include="..\Services\ProductImageLibrary.cs" Link="Services\ProductImageLibrary.cs" />
     <Compile Include="..\Services\TicketService.cs" Link="Services\TicketService.cs" />
     <Compile Include="..\Services\OrderDraftService.cs" Link="Services\OrderDraftService.cs" />

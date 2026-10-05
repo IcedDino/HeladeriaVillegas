@@ -12,7 +12,7 @@ set "DOTNET=dotnet"
 :run
 "%DOTNET%" restore HeladeriaPOS.Maui.csproj
 if errorlevel 1 goto error
-"%DOTNET%" build HeladeriaPOS.Maui.csproj -t:Run -f net8.0-windows10.0.19041.0 -c Debug -p:RuntimeIdentifier=win-x64 -p:WindowsPackageType=None
+"%DOTNET%" build HeladeriaPOS.Maui.csproj -t:Run -f net8.0-windows10.0.19041.0 -c Debug -p:Platform=x64 -p:RuntimeIdentifier=win-x64 -p:WindowsPackageType=None
 if errorlevel 1 goto error
 exit /b 0
 :error

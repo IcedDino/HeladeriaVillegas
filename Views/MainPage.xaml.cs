@@ -11,7 +11,6 @@ public partial class MainPage : ContentPage
     private readonly IProductDialogService _dialogService;
     private readonly OpenverseService _openverseService;
     private readonly TicketService _ticketService;
-    private readonly BackupService _backupService;
     private OpenverseImageResult? _selectedOpenverseImage;
     private CancellationTokenSource? _openverseSearchCancellation;
     private bool _isProductConfiguratorOpen;
@@ -28,14 +27,13 @@ public partial class MainPage : ContentPage
     }
 
     private KeypadTarget _keypadTarget = KeypadTarget.Cash;
-    public MainPage(MainViewModel viewModel, IProductDialogService dialogService, OpenverseService openverseService, TicketService ticketService, BackupService backupService)
+    public MainPage(MainViewModel viewModel, IProductDialogService dialogService, OpenverseService openverseService, TicketService ticketService)
     {
         InitializeComponent();
         BindingContext = _viewModel = viewModel;
         _dialogService = dialogService;
         _openverseService = openverseService;
         _ticketService = ticketService;
-        _backupService = backupService;
         ProductCollectionView.SizeChanged += (s, e) => UpdateCardHeight();
         viewModel.PropertyChanged += OnViewModelPropertyChanged;
     }
@@ -160,7 +158,7 @@ public partial class MainPage : ContentPage
 
     private void OnReceivedCashTapped(object? sender, TappedEventArgs e) => ShowNumericKeypad();
 
-    private void OnDiscountTapped(object? sender, TappedEventArgs e) => ShowKeypad(KeypadTarget.Discount, "DESCUENTO");
+    private void OnDiscountClicked(object? sender, EventArgs e) => ShowKeypad(KeypadTarget.Discount, "DESCUENTO EN PESOS");
     private void OnCardTapped(object? sender, TappedEventArgs e) => ShowKeypad(KeypadTarget.Card, "PAGO CON TARJETA");
     private void OnTransferTapped(object? sender, TappedEventArgs e) => ShowKeypad(KeypadTarget.Transfer, "TRANSFERENCIA");
 
@@ -176,6 +174,7 @@ public partial class MainPage : ContentPage
     {
         _keypadTarget = target;
         KeypadTitle.Text = title;
+        KeypadValueText.Text = "$" + GetKeypadValue();
         NumericKeypadOverlay.IsVisible = true;
     }
 
@@ -212,6 +211,7 @@ public partial class MainPage : ContentPage
                 _viewModel.ReceivedCashInput = value;
                 break;
         }
+        KeypadValueText.Text = "$" + GetKeypadValue();
     }
 
     private void OnKeypadNumberClicked(object? sender, EventArgs e)
@@ -266,7 +266,7 @@ public partial class MainPage : ContentPage
 
     private void OnHoldOrderClicked(object? sender, EventArgs e)
     {
-        if (!_viewModel.HasItemsInCart) return;
+        if (!_viewModel.HasItemsInCart || _viewModel.IsBusy) return;
         _viewModel.HoldCurrentOrder();
     }
 
@@ -301,7 +301,6 @@ public partial class MainPage : ContentPage
 
     private async void OnSalesClicked(object? sender, EventArgs e) => await Navigation.PushModalAsync(new NavigationPage(new SalesPage(_ticketService)));
     private async void OnPricesClicked(object? sender, EventArgs e) => await Navigation.PushModalAsync(new NavigationPage(new PricesPage(_ticketService, _viewModel, OpenAddProductForm)));
-    private async void OnBackupClicked(object? sender, EventArgs e) => await Navigation.PushModalAsync(new NavigationPage(new RespaldoPage(_backupService)));
 
     public void OpenAddProductForm()
     {

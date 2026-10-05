@@ -4,6 +4,17 @@ using HeladeriaPOS.Services;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 
+decimal cashDue = CashPaymentCalculator.AmountDue(167m, 100m, 20m, true);
+Check(cashDue == 47m, "Pago mixto calcula saldo en efectivo");
+Check(CashPaymentCalculator.ApplyQuickCash(0m, cashDue, "Exacto") == 47m, "Exacto cubre solamente saldo de pago mixto");
+decimal receivedBills = CashPaymentCalculator.ApplyQuickCash(0m, cashDue, "20");
+receivedBills = CashPaymentCalculator.ApplyQuickCash(receivedBills, cashDue, "50");
+Check(receivedBills == 70m && receivedBills - cashDue == 23m, "Billetes acumulan efectivo y cambio");
+Check(CashPaymentCalculator.ApplyQuickCash(receivedBills, cashDue, "Limpiar") == 0m, "Limpiar reinicia efectivo");
+Check(CashPaymentCalculator.ApplyQuickCash(0m, 167m, "1000") == 1000m, "Acepta billete de mil pesos");
+Check(CashPaymentCalculator.AmountDue(167m, 100m, 20m, false) == 167m, "Efectivo ignora importes de otros métodos");
+Check(CashPaymentCalculator.AmountDue(100m, 150m, 0m, true) == 0m, "Saldo en efectivo no es negativo");
+
 var startupCoordinator = new StartupCoordinator();
 var renderer = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 Task visibleInterval = startupCoordinator.WaitForRendererAsync(renderer.Task,
@@ -66,6 +77,12 @@ try
     await tickets.SaveTicketAsync(ticket);
     Ticket saved = (await tickets.GetTicketsAsync(DateTime.Today)).Single(t => t.OrderNumber == ticket.OrderNumber);
     Check(saved.Items.Single().Flavors == "Chocolate" && saved.Items.Single().Modifiers.Count == 1, "Venta conserva preparación");
+    var noFlavorTicket = new Ticket { OrderNumber = "NO-FLAVOR-" + Guid.NewGuid().ToString("N"), Status = TicketStatus.Paid,
+        PaidAt = DateTime.Now, Total = 47m, SubtotalBase = 47m, Received = 50m, Change = 3m,
+        Items = [new OrderItem { ProductId = changed.Id, ProductName = changed.Name, BaseUnitPrice = 47m }] };
+    await tickets.SaveTicketAsync(noFlavorTicket);
+    Ticket savedNoFlavor = (await tickets.GetTicketsAsync(DateTime.Today)).Single(t => t.OrderNumber == noFlavorTicket.OrderNumber);
+    Check(savedNoFlavor.Items.Single().Flavors is null && savedNoFlavor.Change == 3m, "Venta sin sabor se guarda y conserva cambio");
     await tickets.CancelTicketAsync(saved.Id, "Prueba de caja");
     Check((await tickets.GetTicketsAsync(DateTime.Today)).Single(t => t.Id == saved.Id).Status == TicketStatus.Cancelled, "Cancelación auditada");
     using (var old = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={legacyPath}"))
@@ -87,18 +104,62 @@ try
     Product oldBarquillo = (await new TicketService(legacyFactory).GetAllProductsAsync()).Single(p => p.Name == "Barquillo");
     Check(!oldBarquillo.IsActive && oldBarquillo.BasePrice == 99m && oldBarquillo.Prices.Count > 0, "Migración conserva producto antiguo");
     var drafts = new OrderDraftService();
-    drafts.SaveCurrent(new OrderDraftService.Draft { OrderNumber = "VERIFY-DRAFT", Items = [ticket.Items.Single()] });
+    drafts.SaveCurrent(new OrderDraftService.Draft { OrderNumber = "VERIFY-DRAFT", Items = [ticket.Items.Single()],
+        PaymentMethod = PaymentMethod.Mixed, ReceivedCashInput = "50", CardInput = "17", DiscountInput = "5", DiscountReason = "Prueba" });
     Check(drafts.LoadCurrent()?.Items.Single().Flavors == "Chocolate", "Recuperación de borrador");
+    string currentDraftFile = Path.Combine(FileSystem.AppDataDirectory, "Drafts", "current.json");
+    if (args.Contains("--performance"))
+    {
+        OrderDraftService.Draft sample = drafts.LoadCurrent()!;
+        long allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+        var draftClock = Stopwatch.StartNew();
+        for (int i = 0; i < 500; i++) drafts.SaveCurrent(sample);
+        Console.WriteLine($"PERF: 500 guardados idénticos: {draftClock.Elapsed.TotalMilliseconds:F2} ms; " +
+            $"{GC.GetAllocatedBytesForCurrentThread() - allocatedBefore} bytes asignados; JSON {new FileInfo(currentDraftFile).Length} bytes");
+    }
+    DateTime unchangedTime = new(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+    File.SetLastWriteTimeUtc(currentDraftFile, unchangedTime);
+    drafts.SaveCurrent(drafts.LoadCurrent()!);
+    Check(File.GetLastWriteTimeUtc(currentDraftFile) == unchangedTime, "Borrador idéntico no vuelve a escribir el disco");
+    string storedDraft = File.ReadAllText(currentDraftFile);
+    Check(!storedDraft.Contains("LineTotal") && !storedDraft.Contains("\n"), "Borrador almacena solamente datos necesarios sin formato adicional");
+    OrderDraftService.Draft updatedDraft = drafts.LoadCurrent()!;
+    updatedDraft.Items.Single().Quantity = 3;
+    drafts.SaveCurrent(updatedDraft);
+    Check(new OrderDraftService().LoadCurrent()?.Items.Single().Quantity == 3, "Cambio de cantidad se guarda inmediatamente");
+    string legacyDraft = System.Text.Json.JsonSerializer.Serialize(updatedDraft,
+        new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+    File.WriteAllText(currentDraftFile, legacyDraft);
+    Check(new OrderDraftService().LoadCurrent()?.Items.Single().LineTotal == updatedDraft.Items.Single().LineTotal,
+        "Borradores antiguos con importes calculados siguen siendo compatibles");
     drafts.Hold(drafts.LoadCurrent()!);
     string held = drafts.HeldOrders().Single();
     Check(drafts.LoadHeld(held)?.OrderNumber == "VERIFY-DRAFT", "Orden en espera");
+    Check(drafts.LoadCurrent() is null, "Poner en espera libera el ticket actual");
+    OrderDraftService.Draft? heldDraft = new OrderDraftService().LoadHeld(held);
+    Check(heldDraft?.Items.Single().Flavors == "Chocolate" && heldDraft.PaymentMethod == PaymentMethod.Mixed
+        && heldDraft.ReceivedCashInput == "50" && heldDraft.CardInput == "17" && heldDraft.DiscountInput == "5",
+        "Orden en espera conserva productos y pago tras reinicio");
     drafts.DeleteHeld(held);
+    drafts.SaveCurrent(updatedDraft);
+    Check(drafts.LoadCurrent()?.OrderNumber == updatedDraft.OrderNumber, "Guardado idéntico tras poner en espera recrea borrador actual");
     using (var source = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={path};Mode=ReadOnly"))
     using (var target = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={Path.Combine(FileSystem.AppDataDirectory, "pos.db")}"))
     { source.Open(); target.Open(); source.BackupDatabase(target); }
     var backups = new BackupService();
     string backupFile = backups.CreateBackup();
     Check(File.Exists(backupFile), "Respaldo verificable");
+    var backupClock = new VerificationTimeProvider(DateTimeOffset.UtcNow);
+    using var scheduledBackups = new BackupService(backupClock);
+    Check(scheduledBackups.BackupIfDue() is null, "No duplica respaldo reciente al iniciar");
+    backupClock.UtcNow = backupClock.UtcNow.AddHours(11);
+    Check(scheduledBackups.BackupIfDue() is null, "No adelanta respaldo antes de las 12 horas");
+    backupClock.UtcNow = backupClock.UtcNow.AddHours(1).AddSeconds(1);
+    string? nextBackup = scheduledBackups.BackupIfDue();
+    Check(nextBackup is not null && File.Exists(nextBackup) && nextBackup != backupFile, "Crea respaldo automático al cumplirse 12 horas");
+    Check(scheduledBackups.BackupIfDue() is null, "No repite respaldo después de completar el intervalo");
+    using var restartedBackups = new BackupService(backupClock);
+    Check(restartedBackups.BackupIfDue() is null, "Intervalo de respaldo se conserva después de reiniciar");
     backups.ScheduleRestore(backupFile);
     Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
     BackupService.ApplyPendingRestore(FileSystem.AppDataDirectory);
@@ -125,4 +186,10 @@ sealed class ContextFactory(DbContextOptions<PosDbContext> options) : IDbContext
 static class FileSystem
 {
     public static string AppDataDirectory { get; set; } = string.Empty;
+}
+
+sealed class VerificationTimeProvider(DateTimeOffset utcNow) : TimeProvider
+{
+    public DateTimeOffset UtcNow { get; set; } = utcNow;
+    public override DateTimeOffset GetUtcNow() => UtcNow;
 }
