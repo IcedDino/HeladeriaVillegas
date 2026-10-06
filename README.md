@@ -4,6 +4,7 @@ Punto de venta táctil para Windows con .NET MAUI 8, SQLite y funcionamiento loc
 
 ## Uso en caja
 
+- `Tutoriales` inicia `Cómo hacer una venta` sobre la pantalla principal. La guía señala producto, tamaño, sabor, agregar al ticket, cantidad, cobro, efectivo, billete y confirmación; bloquea las demás acciones y el cambio de foco con Tab durante la práctica. El avance se guarda para continuar o repetir. La caja usa un ticket temporal de demo, no crea ventas ni órdenes en espera reales y restaura el ticket original al salir.
 - Selecciona categoría y producto. El configurador muestra el precio final antes de agregarlo.
 - En helados y especialidades, los sabores son opcionales. Puedes agregar y cobrar sin elegir sabor; si lo eliges, se guarda en el ticket.
 - Ajusta cantidades con `+` y `−`. El ticket en curso se guarda automáticamente y se recupera al abrir la aplicación.
@@ -14,6 +15,14 @@ Punto de venta táctil para Windows con .NET MAUI 8, SQLite y funcionamiento loc
 - `Ventas` muestra historial diario, corte por método, cancelación con motivo y reimpresión.
 - `Precios` permite cambiar precios y marcar productos o sabores como no disponibles. Los cambios persisten después de reiniciar.
 - Los respaldos SQLite se crean y verifican automáticamente cada 12 horas mientras la app está abierta. Al iniciar se hace uno si no hay copia o ya venció el intervalo; los fallos se reintentan cada minuto. Solo las copias que pasan la verificación cuentan como respaldo completado.
+
+## Actualizaciones automáticas en Windows
+
+La app instalada busca versiones estables en Releases de `IcedDino/HeladeriaVillegas` al abrir, cada hora y al recuperar conexión. Descarga el instalador en segundo plano y comprueba tamaño y SHA-256 antes de dejarlo pendiente. Sin internet, la caja sigue funcionando; una actualización ya descargada también puede instalarse sin conexión.
+
+La actualización se instala automáticamente al siguiente inicio, antes de cargar la caja, después de crear un respaldo verificado. La app vuelve a abrirse al terminar. Si falla el respaldo o el instalador, conserva los datos y aplaza el reintento al menos una hora. Las ejecuciones de desarrollo no instalan actualizaciones.
+
+Windows solicita permisos de administrador al abrir la app. La instalación permite una sola instancia de la caja para evitar sustituir archivos mientras otra instancia está abierta. Los archivos pendientes y los registros `update.log` e `installer.log` quedan en `%ProgramData%\HeladeriaVillegasUpdates`, con acceso restringido a procesos elevados. La publicación de versiones compatibles se describe en `installer/README.md`.
 
 ## Datos y respaldos
 

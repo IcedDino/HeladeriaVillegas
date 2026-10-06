@@ -4,6 +4,11 @@ using HeladeriaPOS.Services;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 
+await UpdateChecks.RunAsync();
+await UpdateCoordinatorChecks.RunAsync();
+StartupPreparationChecks.Run();
+UpdateStorageChecks.Run();
+
 decimal cashDue = CashPaymentCalculator.AmountDue(167m, 100m, 20m, true);
 Check(cashDue == 47m, "Pago mixto calcula saldo en efectivo");
 Check(CashPaymentCalculator.ApplyQuickCash(0m, cashDue, "Exacto") == 47m, "Exacto cubre solamente saldo de pago mixto");
@@ -51,6 +56,15 @@ string path = Path.Combine(Path.GetTempPath(), "heladeria_verify_" + Guid.NewGui
 string legacyPath = Path.Combine(Path.GetTempPath(), "heladeria_legacy_" + Guid.NewGuid().ToString("N") + ".db");
 FileSystem.AppDataDirectory = Path.Combine(Path.GetTempPath(), "heladeria_appdata_" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(FileSystem.AppDataDirectory);
+OrderDisplayNames.Initialize([]);
+Check(OrderDisplayNames.For("empty-startup") == "Orden 1", "Primera orden sin ventas empieza en uno");
+Check(OrderDisplayNames.For("another-empty") == "Orden 1", "Mostrar tickets vacíos no consume números");
+OrderDisplayNames.Reserve("held-real");
+Check(OrderDisplayNames.For("held-real") == "Orden 1" && OrderDisplayNames.For("next") == "Orden 2", "Orden en espera conserva su número");
+OrderDisplayNames.Initialize(["held-real"]);
+Check(OrderDisplayNames.For("next") == "Orden 2", "Reiniciar conserva órdenes reales");
+OrderDisplayNames.Initialize([]);
+Check(OrderDisplayNames.For("next") == "Orden 1", "Se eliminan números sin órdenes reales");
 var options = new DbContextOptionsBuilder<PosDbContext>().UseSqlite($"Data Source={path}").Options;
 var factory = new ContextFactory(options);
 var initializer = new DatabaseInitializer(factory);
@@ -58,6 +72,85 @@ var tickets = new TicketService(factory);
 try
 {
     await initializer.InitializeAsync();
+    int salesBeforeTutorial = (await tickets.GetTicketsAsync(DateTime.Today)).Count;
+    var activeCashOrder = new OrderDraftService();
+    activeCashOrder.SaveCurrent(new OrderDraftService.Draft { OrderNumber = "ACTIVE-CASH-ORDER",
+        Items = [new OrderItem { ProductName = "Orden real pendiente", BaseUnitPrice = 45, Quantity = 2 }] });
+    string activeCashFile = Path.Combine(FileSystem.AppDataDirectory, "Drafts", "current.json");
+    string activeCashBefore = File.ReadAllText(activeCashFile);
+    var tutorial = new SalesTutorialSession();
+    Check(!tutorial.Complete(), "Tutorial no permite completar sin cobrar");
+    tutorial.OpenPayment();
+    Check(tutorial.Step == SalesTutorialStep.Product, "Tutorial exige realizar los pasos en orden");
+    Check(tutorial.BeginConfiguration(), "Tutorial abre configurador");
+    tutorial.CancelConfiguration();
+    Check(tutorial.Step == SalesTutorialStep.Product, "Cancelar configuración permite elegir de nuevo");
+    tutorial.BeginConfiguration();
+    var tutorialProduct = new Product { Id = 999, Name = "Vaso demo", ProductType = ProductType.Custom, BasePrice = 25 };
+    var tutorialSelection = new ProductSelection { Flavors = "Chocolate" };
+    tutorial.AddConfiguredProduct(tutorialProduct, tutorialSelection, new PricingService().Calculate(tutorialProduct, tutorialSelection));
+    tutorial.OpenPayment();
+    Check(tutorial.Step == SalesTutorialStep.Quantity, "Tutorial espera práctica de cantidades");
+    tutorial.ChangeQuantity(-1);
+    Check(tutorial.Item!.Quantity == 1 && !tutorial.QuantityReviewed, "Cantidad de práctica no baja de uno");
+    tutorial.ChangeQuantity(1);
+    Check(tutorial.Total == 50m, "Cantidad actualiza el total de la demo");
+    var tutorialProgress = new TutorialProgressService();
+    tutorialProgress.Save(tutorial);
+    tutorial = new TutorialProgressService().Load();
+    Check(tutorial.Step == SalesTutorialStep.Quantity && tutorial.QuantityReviewed && tutorial.Total == 50m,
+        "Progreso y ticket de práctica se recuperan después de reiniciar");
+    tutorial.OpenPayment();
+    tutorial.SelectCash();
+    tutorial.AddCash(20m);
+    Check(!tutorial.Complete() && tutorial.Step == SalesTutorialStep.Cash, "Demo exige cubrir total antes de cobrar");
+    tutorial.AddCash(50m);
+    Check(tutorial.Change == 20m && tutorial.Step == SalesTutorialStep.Confirm, "Demo calcula cambio y habilita confirmación");
+    tutorial.ClearCash();
+    Check(tutorial.Received == 0 && tutorial.Step == SalesTutorialStep.Cash, "Limpiar efectivo vuelve al paso de cobro");
+    tutorial.AddCash(100m);
+    Check(tutorial.Complete() && tutorial.CompletedAt is not null && tutorial.Progress == 1, "Tutorial registra finalización");
+    tutorialProgress.Save(tutorial);
+    Check(tutorialProgress.Load().Step == SalesTutorialStep.Completed, "Tutorial conserva seguimiento completado");
+    Check((await tickets.GetTicketsAsync(DateTime.Today)).Count == salesBeforeTutorial && File.ReadAllText(activeCashFile) == activeCashBefore,
+        "Tutorial no genera ventas reales ni modifica borrador de caja");
+    using (var tutorialBackups = new BackupService())
+    {
+        var demoDialog = new VerificationProductDialog();
+        var cashViewModel = new HeladeriaPOS.ViewModels.MainViewModel(initializer, new PricingService(), demoDialog,
+            tickets, activeCashOrder, tutorialBackups);
+        await cashViewModel.LoadAsync();
+        Check(cashViewModel.Cart.Single().Model.ProductName == "Orden real pendiente", "Caja recupera orden antes de iniciar guía");
+        cashViewModel.BeginTutorial();
+        Check(cashViewModel.IsTutorialMode && cashViewModel.Cart.Count == 0, "Guía usa caja original con ticket temporal");
+        var demoCard = cashViewModel.FilteredProducts.First(p => p.Model.ProductType == ProductType.Vaso);
+        await demoCard.SelectCommand.ExecuteAsync(null);
+        cashViewModel.Cart.Single().IncrementQuantityCommand.Execute(null);
+        cashViewModel.ReceivedCashInput = "1000";
+        bool demoConfirmed = false;
+        cashViewModel.TutorialCheckoutCompleted += (_, _) => demoConfirmed = true;
+        await cashViewModel.CheckoutCommand.ExecuteAsync(null);
+        cashViewModel.HoldCurrentOrder();
+        Check(demoConfirmed && (await tickets.GetTicketsAsync(DateTime.Today)).Count == salesBeforeTutorial
+            && activeCashOrder.HeldOrders().Count == 0 && File.ReadAllText(activeCashFile) == activeCashBefore,
+            "Cobro y espera de guía no escriben ventas, borrador ni órdenes reales");
+        var guideState = new TutorialProgressService.GuideProgress { Step = 8, Practice = cashViewModel.TutorialSnapshot() };
+        tutorialProgress.SaveGuide(guideState);
+        Check(tutorialProgress.LoadGuide().Practice!.Items.Single().Quantity == 2, "Guía conserva avance y ticket temporal");
+        cashViewModel.EndTutorial();
+        Check(!cashViewModel.IsTutorialMode && cashViewModel.Cart.Single().Model.ProductName == "Orden real pendiente"
+            && cashViewModel.Total == 90m && File.ReadAllText(activeCashFile) == activeCashBefore,
+            "Salir de guía restaura ticket y cantidades originales");
+        cashViewModel.BeginTutorial();
+        demoDialog.Pending = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        Task pendingProduct = demoCard.SelectCommand.ExecuteAsync(null);
+        cashViewModel.EndTutorial();
+        demoDialog.Pending.SetResult(new ProductSelection { IceCreamSize = IceCreamSize.Mediano });
+        await pendingProduct;
+        Check(cashViewModel.Cart.Count == 1 && cashViewModel.Cart.Single().Model.ProductName == "Orden real pendiente",
+            "Salir mientras se configura no agrega producto demo a caja real");
+    }
+    activeCashOrder.ClearCurrent();
     List<Product> products = await tickets.GetProductsAsync();
     Check(products.Count >= 12, "Catálogo inicial");
     Check((await tickets.GetFlavorsAsync(true)).Count >= 3, "Sabores iniciales");
@@ -192,4 +285,12 @@ sealed class VerificationTimeProvider(DateTimeOffset utcNow) : TimeProvider
 {
     public DateTimeOffset UtcNow { get; set; } = utcNow;
     public override DateTimeOffset GetUtcNow() => UtcNow;
+}
+
+sealed class VerificationProductDialog : IProductDialogService
+{
+    public TaskCompletionSource<ProductSelection?>? Pending { get; set; }
+    public void Attach(HeladeriaPOS.Views.MainPage page) { }
+    public Task<ProductSelection?> ConfigureAsync(Product product) => Pending?.Task
+        ?? Task.FromResult<ProductSelection?>(new ProductSelection { IceCreamSize = IceCreamSize.Mediano, Flavors = "Chocolate" });
 }

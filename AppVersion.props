@@ -1,0 +1,9 @@
+<Project>
+  <PropertyGroup>
+    <ReleaseVersion Condition="'$(ReleaseVersion)' == ''">1.0.0</ReleaseVersion>
+    <ApplicationDisplayVersion>$(ReleaseVersion)</ApplicationDisplayVersion>
+    <Version>$(ReleaseVersion)</Version>
+    <AssemblyVersion>$(ReleaseVersion).0</AssemblyVersion>
+    <FileVersion>$(ReleaseVersion).0</FileVersion>
+  </PropertyGroup>
+</Project>

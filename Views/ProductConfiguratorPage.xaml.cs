@@ -60,6 +60,15 @@ public partial class ProductConfiguratorPage : ContentView
 
     public void Cancel() => _result.TrySetResult(null);
 
+    public Button? TutorialTarget(int step) => step switch
+    {
+        1 => _product.ProductType == ProductType.Canasta ? SizeDoubleChip :
+             _product.ProductType == ProductType.Envase ? SizeHalfLiterChip : SizeMediumChip,
+        2 => _flavorChips.FirstOrDefault(),
+        3 => GuideAddProduct,
+        _ => null
+    };
+
     private static (string Group, string Value) SplitId(string id)
     {
         int index = id.IndexOf('|');

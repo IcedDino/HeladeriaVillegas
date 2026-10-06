@@ -24,7 +24,6 @@ public static class MauiProgram
 
         string dataDirectory = FileSystem.AppDataDirectory;
         Directory.CreateDirectory(dataDirectory);
-        BackupService.ApplyPendingRestore(dataDirectory);
         string databasePath = Path.Combine(dataDirectory, "pos.db");
 
         builder.Services.AddDbContextFactory<PosDbContext>(options =>
@@ -35,6 +34,12 @@ public static class MauiProgram
         builder.Services.AddSingleton<TicketService>();
         builder.Services.AddSingleton<OrderDraftService>();
         builder.Services.AddSingleton<BackupService>();
+#if WINDOWS
+        builder.Services.AddSingleton<WindowsUpdatePlatform>();
+        builder.Services.AddSingleton(provider => provider.GetRequiredService<WindowsUpdatePlatform>()
+            .CreateCoordinator(provider.GetRequiredService<BackupService>()));
+#endif
+        builder.Services.AddSingleton<TutorialProgressService>();
         builder.Services.AddSingleton(new HttpClient
         {
             BaseAddress = new Uri("https://api.openverse.org/"),

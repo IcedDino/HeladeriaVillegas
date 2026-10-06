@@ -71,6 +71,13 @@ public sealed class TicketService
         return await db.Tickets.AnyAsync(t => t.OrderNumber == orderNumber);
     }
 
+    public async Task<List<string>> GetRegisteredOrderNumbersAsync()
+    {
+        await using var db = await _factory.CreateDbContextAsync();
+        return await db.Tickets.AsNoTracking().OrderBy(t => t.CreatedAt).ThenBy(t => t.Id)
+            .Select(t => t.OrderNumber).ToListAsync();
+    }
+
     public async Task CancelTicketAsync(int id, string reason)
     {
         if (string.IsNullOrWhiteSpace(reason)) throw new ArgumentException("Indica el motivo de cancelación.");

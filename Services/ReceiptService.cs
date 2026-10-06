@@ -13,7 +13,7 @@ public static class ReceiptService
         string path = Path.Combine(folder, ticket.OrderNumber + ".txt");
         var text = new StringBuilder();
         text.AppendLine("HELADERÍA VILLEGAS");
-        text.AppendLine(ticket.OrderNumber);
+        text.AppendLine(OrderDisplayNames.For(ticket.OrderNumber));
         text.AppendLine(ticket.CreatedAt.ToString("dd/MM/yyyy HH:mm"));
         text.AppendLine(new string('-', 36));
         foreach (OrderItem item in ticket.Items)

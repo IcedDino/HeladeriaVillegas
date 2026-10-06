@@ -297,7 +297,7 @@
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                     <Button Text="Cancelar" Clicked="Cancel_Clicked" HeightRequest="62" CornerRadius="16" FontSize="17" FontAttributes="Bold"
                             BackgroundColor="#EEEEEE" TextColor="#444444" />
-                    <Button Grid.Column="1" Text="Agregar al ticket" Clicked="Add_Clicked" HeightRequest="62" CornerRadius="16" FontSize="17" FontAttributes="Bold"
+                    <Button x:Name="GuideAddProduct" Grid.Column="1" Text="Agregar al ticket" Clicked="Add_Clicked" HeightRequest="62" CornerRadius="16" FontSize="17" FontAttributes="Bold"
                             BackgroundColor="{StaticResource CheckoutGreen}" TextColor="White" />
                 </Grid>
             </VerticalStackLayout>

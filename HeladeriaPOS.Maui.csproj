@@ -1,5 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="AppVersion.props" />
   <PropertyGroup>
+    <DefaultItemExcludes>$(DefaultItemExcludes);artifacts\**;.superpowers\**</DefaultItemExcludes>
     <TargetFrameworks>net8.0-windows10.0.19041.0</TargetFrameworks>
     <!-- En macOS/Linux solo se compila el target Mac Catalyst -->
     <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('OSX')) Or $([MSBuild]::IsOSPlatform('Linux'))">net8.0-maccatalyst</TargetFrameworks>
@@ -13,7 +15,6 @@
     <Nullable>enable</Nullable>
     <ApplicationTitle>Heladería POS</ApplicationTitle>
     <ApplicationId>com.cesardonnet.heladeriapos</ApplicationId>
-    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
     <ApplicationVersion>1</ApplicationVersion>
     <MauiEnableXamlCBindingWithSourceCompilation>true</MauiEnableXamlCBindingWithSourceCompilation>
   </PropertyGroup>
@@ -36,6 +37,7 @@
 
   <ItemGroup>
     <Compile Remove="Verification\**\*.cs" />
+    <Content Include="installer\apply-update.ps1" Link="apply-update.ps1" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#FFF7F9" />
     <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#FFF7F9" BaseSize="256,256" />
     <MauiImage Include="Resources\Images\*" />

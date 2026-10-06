@@ -13,7 +13,7 @@ public sealed class SalesTicketRow
     public Ticket Ticket { get; }
 
     public string TimeDisplay => Ticket.CreatedAt.ToString("HH:mm");
-    public string OrderNumber => Ticket.OrderNumber;
+    public string OrderNumber => OrderDisplayNames.For(Ticket.OrderNumber);
     public string TotalDisplay => Ticket.Total.ToString("C0", MoneyCulture);
     public string StatusText => Ticket.Status == TicketStatus.Paid ? "PAGADA" : "CANCELADA";
     public Color StatusColor => Ticket.Status == TicketStatus.Paid ? Color.FromArgb("#147D5B") : Color.FromArgb("#B3261E");

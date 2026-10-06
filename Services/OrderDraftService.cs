@@ -3,6 +3,75 @@ using HeladeriaPOS.Models;
 
 namespace HeladeriaPOS.Services;
 
+public static class OrderDisplayNames
+{
+    private static readonly object Gate = new();
+    private static Dictionary<string, int>? _numbers;
+
+    public static void Initialize(IEnumerable<string> actualOrders)
+    {
+        lock (Gate)
+        {
+            _ = For("__initialize__");
+            var updated = new Dictionary<string, int>();
+            foreach (string order in actualOrders.Where(n => !string.IsNullOrWhiteSpace(n)).Distinct()
+                .OrderBy(n => _numbers!.TryGetValue(n, out int number) ? number : int.MaxValue))
+                updated[order] = updated.Count + 1;
+            Persist(updated);
+        }
+    }
+
+    public static void Reserve(string orderNumber)
+    {
+        lock (Gate)
+        {
+            _ = For(orderNumber);
+            if (_numbers!.ContainsKey(orderNumber)) return;
+            var updated = new Dictionary<string, int>(_numbers)
+            {
+                [orderNumber] = _numbers.Values.DefaultIfEmpty(0).Max() + 1
+            };
+            Persist(updated);
+        }
+    }
+
+    public static void Forget(string orderNumber)
+    {
+        lock (Gate)
+        {
+            _ = For(orderNumber);
+            if (!_numbers!.ContainsKey(orderNumber)) return;
+            var updated = new Dictionary<string, int>(_numbers);
+            updated.Remove(orderNumber);
+            Persist(updated);
+        }
+    }
+
+    private static void Persist(Dictionary<string, int> updated)
+    {
+        string path = Path.Combine(FileSystem.AppDataDirectory, "order-display-numbers.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path + ".tmp", JsonSerializer.Serialize(updated));
+        File.Move(path + ".tmp", path, true);
+        _numbers = updated;
+    }
+
+    public static string For(string orderNumber)
+    {
+        if (string.IsNullOrWhiteSpace(orderNumber)) return "Orden";
+        lock (Gate)
+        {
+            string path = Path.Combine(FileSystem.AppDataDirectory, "order-display-numbers.json");
+            _numbers ??= File.Exists(path)
+                ? JsonSerializer.Deserialize<Dictionary<string, int>>(File.ReadAllText(path)) ?? new()
+                : new();
+            if (!_numbers.TryGetValue(orderNumber, out int number))
+                number = _numbers.Values.DefaultIfEmpty(0).Max() + 1;
+            return $"Orden {number}";
+        }
+    }
+}
+
 public sealed class OrderDraftService
 {
     private readonly string _directory = Path.Combine(FileSystem.AppDataDirectory, "Drafts");

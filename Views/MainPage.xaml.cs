@@ -11,6 +11,7 @@ public partial class MainPage : ContentPage
     private readonly IProductDialogService _dialogService;
     private readonly OpenverseService _openverseService;
     private readonly TicketService _ticketService;
+    private readonly TutorialProgressService _tutorialProgress;
     private OpenverseImageResult? _selectedOpenverseImage;
     private CancellationTokenSource? _openverseSearchCancellation;
     private bool _isProductConfiguratorOpen;
@@ -27,13 +28,15 @@ public partial class MainPage : ContentPage
     }
 
     private KeypadTarget _keypadTarget = KeypadTarget.Cash;
-    public MainPage(MainViewModel viewModel, IProductDialogService dialogService, OpenverseService openverseService, TicketService ticketService)
+    public MainPage(MainViewModel viewModel, IProductDialogService dialogService, OpenverseService openverseService, TicketService ticketService,
+        TutorialProgressService tutorialProgress)
     {
         InitializeComponent();
         BindingContext = _viewModel = viewModel;
         _dialogService = dialogService;
         _openverseService = openverseService;
         _ticketService = ticketService;
+        _tutorialProgress = tutorialProgress;
         ProductCollectionView.SizeChanged += (s, e) => UpdateCardHeight();
         viewModel.PropertyChanged += OnViewModelPropertyChanged;
     }
@@ -54,6 +57,12 @@ public partial class MainPage : ContentPage
     private void OnClosePaymentClicked(object? sender, EventArgs e)
     {
         PaymentOverlay.IsVisible = false;
+    }
+
+    private void OnTutorialsClicked(object? sender, EventArgs e)
+    {
+        if (_viewModel.IsBusy || _isProductConfiguratorOpen || _guideActive) return;
+        ShowTutorialMenu();
     }
 
     protected override void OnAppearing()
@@ -78,6 +87,7 @@ public partial class MainPage : ContentPage
             _activeProductConfigurator = configurator;
             ProductConfiguratorContent.Content = configurator;
             ProductConfiguratorOverlay.IsVisible = true;
+            if (_guideActive) { _guideStep = 1; RefreshGuide(); }
             return await configurator.WaitForResultAsync();
         }
         finally
@@ -86,6 +96,13 @@ public partial class MainPage : ContentPage
             ProductConfiguratorContent.Content = null;
             _activeProductConfigurator = null;
             _isProductConfiguratorOpen = false;
+            if (_guideActive) Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(100), () =>
+            {
+                if (!_guideActive) return;
+                _guideStep = _viewModel.Cart.Count > 0 ? 4 : 0;
+                SaveGuideProgress();
+                RefreshGuide();
+            });
         }
     }
 
@@ -258,7 +275,7 @@ public partial class MainPage : ContentPage
     private async void OnCancelOrderClicked(object? sender, EventArgs e)
     {
         if (!_viewModel.HasItemsInCart) return;
-        if (await DisplayAlert("Cancelar orden", $"¿Vaciar {_viewModel.CartItemCountDisplay} de la orden {_viewModel.OrderNumber}?", "Cancelar orden", "Conservar"))
+        if (await DisplayAlert("Cancelar orden", $"¿Vaciar {_viewModel.CartItemCountDisplay} de la orden {_viewModel.OrderDisplayName}?", "Cancelar orden", "Conservar"))
             _viewModel.CancelCurrentOrder();
     }
 
@@ -285,7 +302,7 @@ public partial class MainPage : ContentPage
     {
         if (sender is not Button button || button.CommandParameter is not string name) return;
         if (_viewModel.HasItemsInCart &&
-            !await DisplayAlert("Orden actual", $"La orden actual ({_viewModel.OrderNumber}) se pondrá en espera para abrir {name}. ¿Continuar?", "Continuar", "Volver"))
+            !await DisplayAlert("Orden actual", $"La orden actual ({_viewModel.OrderDisplayName}) se pondrá en espera para abrir {OrderDisplayNames.For(name)}. ¿Continuar?", "Continuar", "Volver"))
             return;
         if (_viewModel.HasItemsInCart) _viewModel.HoldCurrentOrder();
         _viewModel.RestoreHeldOrder(name);
@@ -295,7 +312,7 @@ public partial class MainPage : ContentPage
     private async void OnDeleteHeldClicked(object? sender, EventArgs e)
     {
         if (sender is not Button button || button.CommandParameter is not string name) return;
-        if (!await DisplayAlert("Eliminar en espera", $"¿Quitar la orden {name} de la lista en espera?", "Eliminar", "Conservar")) return;
+        if (!await DisplayAlert("Eliminar en espera", $"¿Quitar la {OrderDisplayNames.For(name)} de la lista en espera?", "Eliminar", "Conservar")) return;
         _viewModel.DeleteHeldOrder(name);
     }
 

@@ -19,6 +19,42 @@ public partial class MainViewModel : ObservableObject
     private readonly BackupService _backupService;
     private bool _loaded;
     private bool _restoring;
+    private bool _tutorialMode;
+    private int _tutorialGeneration;
+    private OrderDraftService.Draft? _tutorialOriginal;
+    private ProductCategory _tutorialCategory;
+    public bool IsTutorialMode => _tutorialMode;
+    public event EventHandler? TutorialCheckoutCompleted;
+
+    public void BeginTutorial(OrderDraftService.Draft? practice = null)
+    {
+        if (_tutorialMode) return;
+        _tutorialOriginal = System.Text.Json.JsonSerializer.Deserialize<OrderDraftService.Draft>(
+            System.Text.Json.JsonSerializer.Serialize(Snapshot()))!;
+        _tutorialCategory = SelectedCategory;
+        _tutorialMode = true;
+        _tutorialGeneration++;
+        CreateNewOrder();
+        SelectedCategory = ProductCategory.Helados;
+        ApplyCategoryFilter();
+        if (practice is not null) RestoreDraft(practice);
+        StatusMessage = "Tutorial de ventas · DEMO";
+    }
+
+    public OrderDraftService.Draft TutorialSnapshot() => Snapshot();
+
+    public void EndTutorial()
+    {
+        if (!_tutorialMode) return;
+        if (_tutorialOriginal is not null) RestoreDraft(_tutorialOriginal);
+        SelectedCategory = _tutorialCategory;
+        ApplyCategoryFilter();
+        _tutorialMode = false;
+        OnPropertyChanged(nameof(OrderDisplayName));
+        _tutorialGeneration++;
+        _tutorialOriginal = null;
+        StatusMessage = "Listo para vender";
+    }
     private OrderDraftService.Draft? _lastCleared;
 
     public ObservableCollection<ProductCardViewModel> Products { get; } = [];
@@ -36,6 +72,9 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private string orderNumber = string.Empty;
+
+    public string OrderDisplayName => _tutorialMode ? "Orden demo" : OrderDisplayNames.For(OrderNumber);
+    partial void OnOrderNumberChanged(string value) => OnPropertyChanged(nameof(OrderDisplayName));
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SubtotalBaseDisplay))]
@@ -195,10 +234,15 @@ public partial class MainViewModel : ObservableObject
                 _draftService.ClearCurrent();
                 draft = null;
             }
+            List<string> actualOrders = await _ticketService.GetRegisteredOrderNumbersAsync();
+            actualOrders.AddRange(_draftService.HeldOrders().OrderBy(n => n));
+            if (draft is not null && draft.Items.Count > 0) actualOrders.Add(draft.OrderNumber);
+            OrderDisplayNames.Initialize(actualOrders);
             if (draft is not null) RestoreDraft(draft);
+            OnPropertyChanged(nameof(OrderDisplayName));
             _loaded = true;
             RefreshHeldOrders();
-            StatusMessage = draft is null ? "Listo para vender" : $"Orden {OrderNumber} recuperada";
+            StatusMessage = draft is null ? "Listo para vender" : $"{OrderDisplayName} recuperada";
             _backupService.StartAutomaticBackups(ex => MainThread.BeginInvokeOnMainThread(() =>
                 StatusMessage = $"Respaldo pendiente: {ex.Message}"));
         }
@@ -282,8 +326,9 @@ public partial class MainViewModel : ObservableObject
         if (IsBusy)
             return;
 
+        int generation = _tutorialGeneration;
         ProductSelection? selection = await _dialogService.ConfigureAsync(productCard.Model);
-        if (selection is null)
+        if (selection is null || generation != _tutorialGeneration)
             return;
 
         PricingResult pricing = _pricingService.Calculate(productCard.Model, selection);
@@ -400,6 +445,11 @@ public partial class MainViewModel : ObservableObject
     {
         if (!CanCheckout())
             return;
+        if (_tutorialMode)
+        {
+            TutorialCheckoutCompleted?.Invoke(this, EventArgs.Empty);
+            return;
+        }
 
         IsBusy = true;
         CheckoutCommand.NotifyCanExecuteChanged();
@@ -431,7 +481,7 @@ public partial class MainViewModel : ObservableObject
 
             await _ticketService.SaveTicketAsync(ticket);
             _draftService.ClearCurrent();
-            string paidOrder = OrderNumber;
+            string paidOrder = OrderDisplayName;
             CreateNewOrder();
             StatusMessage = $"Venta {paidOrder} registrada correctamente";
         }
@@ -536,6 +586,7 @@ public partial class MainViewModel : ObservableObject
     {
         if (Cart.Count == 0) return;
         _lastCleared = Snapshot();
+        if (!_tutorialMode) OrderDisplayNames.Forget(OrderNumber);
         OnPropertyChanged(nameof(CanUndoClear));
         CreateNewOrder();
         StatusMessage = "Orden cancelada. Puedes deshacer.";
@@ -552,7 +603,7 @@ public partial class MainViewModel : ObservableObject
 
     public void HoldCurrentOrder()
     {
-        if (Cart.Count == 0 || IsBusy) return;
+        if (Cart.Count == 0 || IsBusy || _tutorialMode) return;
         _draftService.Hold(Snapshot());
         CreateNewOrder();
         RefreshHeldOrders();
@@ -630,8 +681,14 @@ public partial class MainViewModel : ObservableObject
 
     private void SaveDraft()
     {
-        if (!_loaded || _restoring) return;
-        try { _draftService.SaveCurrent(Snapshot()); }
+        if (!_loaded || _restoring || _tutorialMode) return;
+        try
+        {
+            if (Cart.Count > 0) OrderDisplayNames.Reserve(OrderNumber);
+            else OrderDisplayNames.Forget(OrderNumber);
+            _draftService.SaveCurrent(Snapshot());
+            OnPropertyChanged(nameof(OrderDisplayName));
+        }
         catch (Exception ex) { StatusMessage = $"No se pudo proteger la orden: {ex.Message}"; }
     }
 }
@@ -646,6 +703,7 @@ public sealed class HeldOrderSummary
     }
 
     public string OrderNumber { get; }
+    public string OrderDisplayName => OrderDisplayNames.For(OrderNumber);
     public int ItemCount { get; }
     public decimal Total { get; }
 

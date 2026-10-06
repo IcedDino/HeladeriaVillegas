@@ -39,6 +39,14 @@ public partial class App : Application
         };
 
 #if WINDOWS
+        window.Destroying += (_, _) =>
+        {
+            _services.GetRequiredService<WindowsUpdateCoordinator>().Dispose();
+            _services.GetRequiredService<WindowsUpdatePlatform>().Dispose();
+        };
+#endif
+
+#if WINDOWS
         window.Created += (_, _) =>
         {
             StartupLog.Write("Window Created");
@@ -72,8 +80,31 @@ public partial class App : Application
     private async Task StartApplicationAsync(Window window, SplashPage splashPage, NavigationPage navigationPage, MainPage mainPage)
     {
         Exception? startupError = null;
+        bool instanceAccepted = false;
         try
         {
+#if WINDOWS
+            var updatePlatform = _services.GetRequiredService<WindowsUpdatePlatform>();
+            if (!StartupPreparation.TryPrepare(() => instanceAccepted = updatePlatform.TryAcquireInstance(),
+                () => BackupService.ApplyPendingRestore(FileSystem.AppDataDirectory)))
+            {
+                await splashPage.DisplayAlert("Heladería Villegas", "La caja ya está abierta o se está actualizando. Esperá a que termine antes de abrir otra instancia.", "Aceptar");
+                Quit();
+                return;
+            }
+            using var updateTimeout = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+            if (await Task.Run(() => _services.GetRequiredService<WindowsUpdateCoordinator>()
+                .TryInstallPendingAsync(updateTimeout.Token)))
+            {
+                StartupLog.Write("Pending update handed to helper; closing POS");
+                Quit();
+                return;
+            }
+#endif
+#if !WINDOWS
+            instanceAccepted = true;
+            BackupService.ApplyPendingRestore(FileSystem.AppDataDirectory);
+#endif
             StartupLog.Write("Startup begin");
             var coordinator = _services.GetRequiredService<StartupCoordinator>();
             Task rendererDisplay = coordinator.WaitForRendererAsync(splashPage.PrepareRendererAsync(),
@@ -91,12 +122,21 @@ public partial class App : Application
             window.Page = navigationPage;
             StartupLog.Write("POS assigned");
             ActivateNativeWindow(window);
+#if WINDOWS
+            _services.GetRequiredService<WindowsUpdateCoordinator>().Start();
+#endif
             if (startupError is not null)
                 await mainPage.ShowStartupErrorAsync(startupError);
         }
         catch (Exception exception)
         {
             StartupLog.Write("Startup failed: " + exception);
+            if (!instanceAccepted)
+            {
+                await splashPage.DisplayAlert("Heladería Villegas", "No se pudo abrir la caja de forma segura. Cerrá las otras instancias y volvé a intentarlo.", "Aceptar");
+                Quit();
+                return;
+            }
             await splashPage.ReleaseRendererAsync();
             window.Page = navigationPage;
             ActivateNativeWindow(window);

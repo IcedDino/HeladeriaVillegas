@@ -6,13 +6,22 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\Services\GitHubUpdateService.cs" Link="Services\GitHubUpdateService.cs" />
+    <Compile Include="..\Services\UpdateStateStore.cs" Link="Services\UpdateStateStore.cs" />
+    <Compile Include="..\Services\WindowsUpdateCoordinator.cs" Link="Services\WindowsUpdateCoordinator.cs" />
+    <Compile Include="..\Services\StartupPreparation.cs" Link="Services\StartupPreparation.cs" />
+    <Compile Include="..\Services\WindowsUpdateStorage.cs" Link="Services\WindowsUpdateStorage.cs" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.31" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <Compile Include="..\Data\PosDbContext.cs" Link="Data\PosDbContext.cs" />
     <Compile Include="..\Data\DatabaseInitializer.cs" Link="Data\DatabaseInitializer.cs" />
     <Compile Include="..\Models\*.cs" Link="Models\%(Filename)%(Extension)" />
     <Compile Include="..\Services\PriceCatalog.cs" Link="Services\PriceCatalog.cs" />
     <Compile Include="..\Services\PricingService.cs" Link="Services\PricingService.cs" />
     <Compile Include="..\Services\CashPaymentCalculator.cs" Link="Services\CashPaymentCalculator.cs" />
+    <Compile Include="..\Services\TutorialProgressService.cs" Link="Services\TutorialProgressService.cs" />
+    <Compile Include="..\Services\IProductDialogService.cs" Link="Services\IProductDialogService.cs" />
+    <Compile Include="..\ViewModels\*.cs" Link="ViewModels\%(Filename)%(Extension)" />
     <Compile Include="..\Services\ProductImageLibrary.cs" Link="Services\ProductImageLibrary.cs" />
     <Compile Include="..\Services\TicketService.cs" Link="Services\TicketService.cs" />
     <Compile Include="..\Services\OrderDraftService.cs" Link="Services\OrderDraftService.cs" />
