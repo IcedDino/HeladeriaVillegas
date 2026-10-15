@@ -12,6 +12,15 @@ public partial class App : Application
     public App(IServiceProvider services)
     {
         StartupLog.Write("MAUI constructor");
+#if WINDOWS
+        // WebView2 otherwise places its user data beside the executable. The installer
+        // puts the app under Program Files, so point its cache/profile at writable app data.
+        var webViewDataDirectory = Path.Combine(FileSystem.AppDataDirectory, "WebView2");
+        Directory.CreateDirectory(webViewDataDirectory);
+        Environment.SetEnvironmentVariable("WEBVIEW2_USER_DATA_FOLDER", webViewDataDirectory,
+            EnvironmentVariableTarget.Process);
+        StartupLog.Write("WebView2 user data folder: " + webViewDataDirectory);
+#endif
         InitializeComponent();
         _services = services;
     }

@@ -13,7 +13,7 @@
 AppId={{22FBCFCE-05ED-4EAC-843E-52C0EAE7E98C}
 AppName=Heladería Villegas POS
 AppVersion={#AppVersion}
-AppPublisher=Heladería Villegas
+AppPublisher=Nerqova
 DefaultDirName={autopf}\Heladeria Villegas POS
 DefaultGroupName=Heladería Villegas POS
 DisableProgramGroupPage=yes
@@ -48,7 +48,7 @@ Name: "{group}\Heladería Villegas POS"; Filename: "{app}\{#AppExe}"; WorkingDir
 Name: "{autodesktop}\Heladería Villegas POS"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\{#AppExe}"; Description: "Abrir Heladería Villegas POS"; Flags: nowait postinstall skipifsilent runasoriginaluser
+Filename: "{app}\{#AppExe}"; Description: "Abrir Heladería Villegas POS"; Flags: nowait postinstall skipifsilent
 
 [Code]
 var

@@ -1,12 +1,12 @@
-# Instalador para Windows x64
+﻿# Instalador para Windows x64
 
-`artifacts/installer/HeladeriaVillegas-Setup-x64.exe` instala la aplicación y crea accesos directos en el escritorio y menú Inicio. Incluye .NET y Windows App SDK en la carpeta de la app, además de los instaladores sin conexión de Visual C++ x64 y WebView2. Se instalan los componentes que faltan.
+`artifacts/installer/HeladeriaVillegas-Setup-x64.exe` se genera con NSIS, un empaquetador gratuito. Instala la aplicación y crea accesos directos en el menú Inicio y, si se selecciona, en el escritorio. Incluye .NET y Windows App SDK en la carpeta de la app, además de los instaladores sin conexión de Visual C++ x64 y WebView2. Se instalan los componentes que faltan. El instalador y el ejecutable se firman como Nerqova; la ejecución inicial desde la pantalla final usa el token elevado del instalador y queda seleccionada de forma predeterminada.
 
 Requiere Windows 10 versión 1809 o superior, o Windows 11, de 64 bits. Se recomienda instalar para todos los usuarios con permisos de administrador. Incluye desinstalador; los datos y respaldos de la app permanecen en la carpeta de datos del usuario.
 
 ## Regenerar
 
-Ejecutar `installer/build-installer.ps1 -Version 1.0.1`. Admite `-DotnetPath` y `-IsccPath` si las herramientas no están en PATH. La versión es obligatoria y debe usar `major.minor.patch`; se aplica tanto al ejecutable como al instalador. Las dependencias descargadas se guardan en `artifacts/prerequisites` y se valida su firma de Microsoft antes de empaquetarlas.
+Ejecutar `installer/build-installer.ps1 -Version 1.0.0`. Admite `-DotnetPath`, `-NsisPath` y `-SigningCertThumbprint` si las herramientas o el certificado están en ubicaciones distintas. La versión es obligatoria y debe usar `major.minor.patch`; se aplica al ejecutable y al instalador. Las dependencias descargadas se guardan en `artifacts/prerequisites` y se valida su firma de Microsoft antes de empaquetarlas. Se requiere un certificado con clave privada y sujeto `CN=Nerqova` en el almacén Personal del usuario actual.
 
 ## Publicar actualizaciones
 
@@ -25,6 +25,10 @@ Fuentes oficiales:
 
 - https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/distribution
 - https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist
-- https://jrsoftware.org/isdl-old.php
+- https://nsis.sourceforge.io/Download
+- https://nsis.sourceforge.io/License
+- https://nsis.sourceforge.io/Reference/RequestExecutionLevel
 
-Los paquetes descargados y el EXE generado quedan en `artifacts`, excluido de Git. El instalador de la aplicación no tiene firma digital propia.
+Los paquetes descargados y el EXE generado quedan en `artifacts`, excluido de Git. El certificado actual es autofirmado para uso interno; los equipos externos no confiarán en la firma hasta que se use un certificado de una autoridad reconocida o se instale la confianza corporativa correspondiente. La firma tampoco garantiza que SmartScreen o Microsoft Defender nunca muestren avisos.
+
+

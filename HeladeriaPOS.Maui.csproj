@@ -14,6 +14,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <ApplicationTitle>Heladería POS</ApplicationTitle>
+    <Authors>Nerqova</Authors>
+    <Company>Nerqova</Company>
     <ApplicationId>com.cesardonnet.heladeriapos</ApplicationId>
     <ApplicationVersion>1</ApplicationVersion>
     <MauiEnableXamlCBindingWithSourceCompilation>true</MauiEnableXamlCBindingWithSourceCompilation>
