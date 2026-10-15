@@ -1,6 +1,16 @@
 # Heladería Villegas POS
 
+[![Última versión](https://img.shields.io/github/v/release/IcedDino/HeladeriaVillegas)](https://github.com/IcedDino/HeladeriaVillegas/releases/latest)
+
 Punto de venta táctil para Windows con .NET MAUI 8, SQLite y funcionamiento local.
+
+## Descargar e instalar
+
+1. Descarga el instalador desde la [última versión](https://github.com/IcedDino/HeladeriaVillegas/releases/latest): **`HeladeriaVillegas-Setup-x64.exe`**.
+2. Ejecútalo con permisos de administrador en el equipo de caja. Incluye .NET, Windows App SDK, Visual C++ x64 y WebView2; se instalan los componentes que falten.
+3. Crea accesos directos en el escritorio y menú Inicio. Tras la primera instalación manual, la app descargará e instalará las siguientes versiones automáticamente.
+
+Todas las versiones: https://github.com/IcedDino/HeladeriaVillegas/releases
 
 ## Uso en caja
 
