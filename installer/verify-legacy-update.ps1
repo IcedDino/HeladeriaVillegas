@@ -23,12 +23,21 @@ foreach ($name in @('GitHubUpdateService.cs', 'WindowsUpdateCoordinator.cs', 'Up
 $legacyInstaller = (& git -C $root show 'v1.0.0:installer/HeladeriaPOS.iss') -join "`n"
 if ($LASTEXITCODE -ne 0) { throw 'Could not read original installer definition.' }
 $currentInstaller = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'HeladeriaPOS.iss') -Raw
-foreach ($setting in @('AppId', 'DefaultDirName', 'OutputBaseFilename')) {
+if (Test-Path -LiteralPath (Join-Path (Split-Path $installer) 'release-readiness.json')) {
+    $readiness = Get-Content -LiteralPath (Join-Path (Split-Path $installer) 'release-readiness.json') -Raw | ConvertFrom-Json
+} else { $readiness = $null }
+if ($readiness -and $readiness.PrerequisitesBundled -eq $false) {
+    $nsis = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'HeladeriaVillegas.nsi') -Raw
+    if ($nsis -notmatch 'InstallDir "\$PROGRAMFILES64\\Heladeria Villegas POS"' -or
+        $nsis -notmatch '/VERYSILENT' -or $nsis -notmatch '/DIR=' -or
+        $nsis -notmatch 'OutFile .*HeladeriaVillegas-Setup-x64.exe') { throw 'NSIS package does not preserve original directory, filename or helper arguments.' }
+    if ((Get-FileHash -LiteralPath $installer).Hash -ne $readiness.Sha256) { throw 'Readiness manifest hash differs from installer.' }
+} else { foreach ($setting in @('AppId', 'DefaultDirName', 'OutputBaseFilename')) {
     $pattern = '(?m)^' + $setting + '=(.+)$'
     $before = [regex]::Match($legacyInstaller, $pattern).Groups[1].Value.Trim()
     $after = [regex]::Match($currentInstaller, $pattern).Groups[1].Value.Trim()
     if (!$before -or $before -cne $after) { throw "Incompatible Inno Setup setting: $setting" }
-}
+} }
 # The asset actually published under v1.0.0 was rebuilt as 1.0.1 with publisher Nerqova.
 # Its metadata differs from the source tag; retain the published asset's data directory.
 $newManifest = Get-Content -LiteralPath (Join-Path $root 'Platforms/Windows/Package.appxmanifest') -Raw -Encoding UTF8
@@ -48,4 +57,4 @@ if ($LASTEXITCODE -ne 0) { throw 'Could not read original installation helper.' 
 $helperPath = Join-Path $workspace 'apply-update-1.0.0.ps1'
 $originalHelper | Set-Content -LiteralPath $helperPath -Encoding UTF8
 & (Join-Path $PSScriptRoot 'verify-updater.ps1') -UpdaterScriptPath $helperPath -LegacyInno
-Write-Output 'OK: original installer identity, folder and asset filename preserved'
+Write-Output 'OK: original folder, data identity and asset filename preserved; original helper command line supported'

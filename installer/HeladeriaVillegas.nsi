@@ -4,6 +4,7 @@ SetCompressor /SOLID lzma
 
 !include "MUI2.nsh"
 !include "LogicLib.nsh"
+!include "FileFunc.nsh"
 
 !ifndef APP_VERSION
   !define APP_VERSION "1.0.0"
@@ -64,6 +65,19 @@ Section "${APP_NAME}" SEC_APP
   SectionIn RO
   SetShellVarContext all
 
+!ifdef UPDATE_ONLY
+  InitPluginsDir
+  SetOutPath "$PLUGINSDIR"
+  File /oname=check-light-update.ps1 "${__FILEDIR__}\check-light-update.ps1"
+  File /oname=retained-files.json "${PUBLISH_DIR}\retained-files.json"
+  ExecWait '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "$PLUGINSDIR\check-light-update.ps1" -InstallDirectory "$INSTDIR" -ManifestPath "$PLUGINSDIR\retained-files.json" -LogPath "$TEMP\HeladeriaVillegas-update-check.log"' $DependencyExitCode
+  ${If} $DependencyExitCode != 0
+    SetErrorLevel 1
+    IfSilent +2
+    MessageBox MB_ICONSTOP "No se pudo verificar la actualizacion o el respaldo. Cierra la caja y revisa $TEMP\HeladeriaVillegas-update-check.log. Tus datos no se modificaron."
+    Abort
+  ${EndIf}
+!else
   SetOutPath "$PLUGINSDIR"
   File /oname=${PREREQ_VC} "${PREREQUISITES_DIR}\${PREREQ_VC}"
   File /oname=${PREREQ_WEBVIEW} "${PREREQUISITES_DIR}\${PREREQ_WEBVIEW}"
@@ -94,6 +108,7 @@ Section "${APP_NAME}" SEC_APP
     ${EndIf}
   ${EndIf}
 
+!endif
   SetOutPath "$INSTDIR"
   File /r "${PUBLISH_DIR}\*.*"
 
@@ -169,6 +184,18 @@ FunctionEnd
 
 Function .onInit
   SetRegView 64
+  ; Accept both the original Inno helper and the NSIS helper command lines.
+  ${GetParameters} $R0
+  ClearErrors
+  ${GetOptions} $R0 "/VERYSILENT" $R1
+  ${IfNot} ${Errors}
+    SetSilent silent
+  ${EndIf}
+  ClearErrors
+  ${GetOptions} $R0 "/DIR=" $R1
+  ${IfNot} ${Errors}
+    StrCpy $INSTDIR $R1
+  ${EndIf}
 FunctionEnd
 
 Function un.onInit

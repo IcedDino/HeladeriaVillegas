@@ -4,10 +4,18 @@ using HeladeriaPOS.Services;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 
+if (args.Length == 2 && args[0] == "--inspect-updater")
+{
+    InstalledUpdaterInspection.Run(args[1]);
+    return;
+}
+
 await UpdateChecks.RunAsync();
 await UpdateCoordinatorChecks.RunAsync();
 StartupPreparationChecks.Run();
 UpdateStorageChecks.Run();
+if (args.Length == 2 && args[0] == "--preserve-db")
+    await DataPreservationChecks.RunAsync(args[1]);
 
 decimal cashDue = CashPaymentCalculator.AmountDue(167m, 100m, 20m, true);
 Check(cashDue == 47m, "Pago mixto calcula saldo en efectivo");
@@ -201,6 +209,7 @@ try
     Check(savedNoFlavor.Items.Single().Flavors is null && savedNoFlavor.Change == 3m, "Venta sin sabor se guarda y conserva cambio");
     await tickets.CancelTicketAsync(saved.Id, "Prueba de caja");
     Check((await tickets.GetTicketsAsync(DateTime.Today)).Single(t => t.Id == saved.Id).Status == TicketStatus.Cancelled, "Cancelación auditada");
+    await DataPreservationChecks.RunAsync(path);
     using (var old = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={legacyPath}"))
     {
         old.Open();
