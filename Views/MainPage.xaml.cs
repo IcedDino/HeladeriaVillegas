@@ -20,6 +20,7 @@ public partial class MainPage : ContentPage
     private enum KeypadTarget
     {
         Cash,
+        CustomSale,
         BasePrice,
         ExtraPrice,
         Discount,
@@ -27,6 +28,10 @@ public partial class MainPage : ContentPage
         Transfer
     }
 
+    private string? _newProductCategoryName;
+    private bool _updatingKeypadInput;
+    private bool _replaceKeypadValue;
+    private string _customSalePrice = "0";
     private KeypadTarget _keypadTarget = KeypadTarget.Cash;
     public MainPage(MainViewModel viewModel, IProductDialogService dialogService, OpenverseService openverseService, TicketService ticketService,
         TutorialProgressService tutorialProgress)
@@ -39,12 +44,48 @@ public partial class MainPage : ContentPage
         _tutorialProgress = tutorialProgress;
         ProductCollectionView.SizeChanged += (s, e) => UpdateCardHeight();
         viewModel.PropertyChanged += OnViewModelPropertyChanged;
+        viewModel.Categories.CollectionChanged += (_, _) => RebuildCategoryButtons();
+        RebuildCategoryButtons();
     }
 
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(MainViewModel.SelectedCategoryName)) UpdateCategoryButtons();
         if (e.PropertyName == nameof(MainViewModel.HasItemsInCart) && !_viewModel.HasItemsInCart && PaymentOverlay.IsVisible)
             PaymentOverlay.IsVisible = false;
+    }
+
+    private void OnCategoryClicked(object? sender, EventArgs e)
+    {
+        if (sender is Button { CommandParameter: string name })
+            _viewModel.SelectedCategoryName = name;
+    }
+
+    private void RebuildCategoryButtons()
+    {
+        CategoryButtons.Children.Clear();
+        foreach (string name in _viewModel.Categories)
+        {
+            var button = new Button
+            {
+                Text = name, CommandParameter = name,
+                Style = (Style)Application.Current!.Resources["CategoryButtonStyle"],
+                MinimumHeightRequest = 54, Padding = new Thickness(16, 10), Margin = new Thickness(0, 0, 8, 6)
+            };
+            button.Clicked += OnCategoryClicked;
+            CategoryButtons.Children.Add(button);
+        }
+        UpdateCategoryButtons();
+    }
+
+    private void UpdateCategoryButtons()
+    {
+        foreach (Button button in CategoryButtons.Children.OfType<Button>())
+        {
+            bool selected = button.CommandParameter as string == _viewModel.SelectedCategoryName;
+            button.BackgroundColor = Color.FromArgb(selected ? "#8E1244" : "#FFF4F7");
+            button.TextColor = selected ? Colors.White : Color.FromArgb("#8E1244");
+        }
     }
 
     private void OnOpenPaymentClicked(object? sender, EventArgs e)
@@ -68,7 +109,7 @@ public partial class MainPage : ContentPage
     protected override void OnAppearing()
     {
         base.OnAppearing();
-        StartupLog.Write("MainPage appearing");
+        StartupLog.Write($"MainPage appearing products={_viewModel.Products.Count} filtered={_viewModel.FilteredProducts.Count} categories={_viewModel.Categories.Count} selected={_viewModel.SelectedCategoryName}");
         _dialogService.Attach(this);
     }
 
@@ -129,6 +170,12 @@ public partial class MainPage : ContentPage
         double sidebarWidth = width < 1250 ? 420 : 460;
         MainContent.ColumnDefinitions[1].Width = new GridLength(sidebarWidth);
 
+        AddProductCard.WidthRequest = Math.Min(1060, width - 32);
+        AddProductCard.HeightRequest = Math.Min(740, height - 32);
+        ProductCategoryCard.WidthRequest = Math.Min(620, width - 32);
+        ProductCategoryCard.HeightRequest = Math.Min(540, height - 32);
+        CustomSaleCard.WidthRequest = Math.Min(620, width - 32);
+        CustomSaleCard.HeightRequest = Math.Min(680, height - 32);
         bool compact = width < 1024;
         PaymentCard.Margin = compact ? new Thickness(16) : new Thickness(32);
 
@@ -172,10 +219,10 @@ public partial class MainPage : ContentPage
     private void OnCardTapped(object? sender, TappedEventArgs e) => ShowKeypad(KeypadTarget.Card, "PAGO CON TARJETA");
     private void OnTransferTapped(object? sender, TappedEventArgs e) => ShowKeypad(KeypadTarget.Transfer, "TRANSFERENCIA");
 
-    private void OnBasePriceTapped(object? sender, TappedEventArgs e) =>
+    private void OnBasePriceKeypadClicked(object? sender, EventArgs e) =>
         ShowKeypad(KeypadTarget.BasePrice, "PRECIO BASE");
 
-    private void OnExtraPriceTapped(object? sender, TappedEventArgs e) =>
+    private void OnExtraPriceKeypadClicked(object? sender, EventArgs e) =>
         ShowKeypad(KeypadTarget.ExtraPrice, "PRECIO POR EXTRA");
 
     private void ShowNumericKeypad() => ShowKeypad(KeypadTarget.Cash, "EFECTIVO RECIBIDO");
@@ -184,12 +231,15 @@ public partial class MainPage : ContentPage
     {
         _keypadTarget = target;
         KeypadTitle.Text = title;
-        KeypadValueText.Text = "$" + GetKeypadValue();
+        _replaceKeypadValue = true;
+        KeypadError.IsVisible = false;
+        UpdateKeypadInput();
         NumericKeypadOverlay.IsVisible = true;
     }
 
     private string GetKeypadValue() => _keypadTarget switch
     {
+        KeypadTarget.CustomSale => _customSalePrice,
         KeypadTarget.BasePrice => NewProductPrice.Text ?? string.Empty,
         KeypadTarget.ExtraPrice => NewProductExtraPrice.Text ?? string.Empty,
         KeypadTarget.Discount => _viewModel.DiscountInput,
@@ -202,6 +252,11 @@ public partial class MainPage : ContentPage
     {
         switch (_keypadTarget)
         {
+            case KeypadTarget.CustomSale:
+                _customSalePrice = value;
+                CustomSalePrice.Text = "$" + value;
+                CustomSaleError.IsVisible = false;
+                break;
             case KeypadTarget.BasePrice:
                 NewProductPrice.Text = value;
                 break;
@@ -221,7 +276,22 @@ public partial class MainPage : ContentPage
                 _viewModel.ReceivedCashInput = value;
                 break;
         }
-        KeypadValueText.Text = "$" + GetKeypadValue();
+        UpdateKeypadInput();
+    }
+
+    private void UpdateKeypadInput()
+    {
+        _updatingKeypadInput = true;
+        try { KeypadValueInput.Text = GetKeypadValue(); }
+        finally { _updatingKeypadInput = false; }
+    }
+
+    private void OnKeypadInputChanged(object? sender, TextChangedEventArgs e)
+    {
+        if (_updatingKeypadInput || !NumericKeypadOverlay.IsVisible) return;
+        _replaceKeypadValue = false;
+        KeypadError.IsVisible = false;
+        SetKeypadValue((e.NewTextValue ?? string.Empty).Trim().Replace(',', '.'));
     }
 
     private void OnKeypadNumberClicked(object? sender, EventArgs e)
@@ -229,10 +299,10 @@ public partial class MainPage : ContentPage
         if (sender is not Button { Text: var key } || string.IsNullOrEmpty(key))
             return;
 
-        string current = GetKeypadValue();
-        if (string.IsNullOrEmpty(current))
-            current = "0";
-
+        if (_keypadTarget == KeypadTarget.CustomSale) CustomSaleName.Unfocus();
+        string current = _replaceKeypadValue ? "0" : GetKeypadValue();
+        _replaceKeypadValue = false;
+        if (string.IsNullOrEmpty(current)) current = "0";
         if (key == ".")
         {
             if (!current.Contains('.'))
@@ -248,17 +318,37 @@ public partial class MainPage : ContentPage
 
     private void OnKeypadBackspaceClicked(object? sender, EventArgs e)
     {
+        _replaceKeypadValue = false;
+        if (_keypadTarget == KeypadTarget.CustomSale) CustomSaleName.Unfocus();
         string current = GetKeypadValue();
         if (string.IsNullOrEmpty(current))
             current = "0";
         SetKeypadValue(current.Length > 1 ? current[..^1] : "0");
     }
 
-    private void OnKeypadClearClicked(object? sender, EventArgs e) => SetKeypadValue("0");
+    private void OnKeypadClearClicked(object? sender, EventArgs e)
+    {
+        _replaceKeypadValue = false;
+        if (_keypadTarget == KeypadTarget.CustomSale) CustomSaleName.Unfocus();
+        SetKeypadValue("0");
+    }
 
-    private void OnKeypadDoneClicked(object? sender, EventArgs e) => NumericKeypadOverlay.IsVisible = false;
+    private void OnKeypadDoneClicked(object? sender, EventArgs e)
+    {
+        string value = GetKeypadValue();
+        if (!decimal.TryParse(value, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out decimal amount)
+            || amount < 0m || amount > 1000000m || decimal.Round(amount, 2) != amount)
+        {
+            KeypadError.Text = "Escribe un importe de 0 a 1,000,000, con hasta dos decimales.";
+            KeypadError.IsVisible = true;
+            return;
+        }
+        SetKeypadValue(amount.ToString("0.##", CultureInfo.InvariantCulture));
+        KeypadValueInput.Unfocus();
+        NumericKeypadOverlay.IsVisible = false;
+    }
 
-    private void OnKeypadBackdropTapped(object? sender, TappedEventArgs e) => NumericKeypadOverlay.IsVisible = false;
+    private void OnKeypadBackdropTapped(object? sender, TappedEventArgs e) => OnKeypadDoneClicked(sender, EventArgs.Empty);
 
     private void OnKeypadPanelTapped(object? sender, TappedEventArgs e)
     {
@@ -405,6 +495,11 @@ public partial class MainPage : ContentPage
     {
         AddProductErrorPanel.IsVisible = false;
         string name = NewProductName.Text?.Trim() ?? string.Empty;
+        if (NewCategoryPanel.IsVisible)
+        {
+            ShowAddProductError("Agrega o cancela la nueva categor\u00eda antes de guardar el producto.");
+            return;
+        }
 
         if (name.Length == 0)
         {
@@ -412,21 +507,21 @@ public partial class MainPage : ContentPage
             return;
         }
 
-        if (!TryParseAmount(NewProductPrice.Text, out decimal basePrice) || basePrice <= 0m)
+        if (!TryParseAmount(NewProductPrice.Text, out decimal basePrice) || basePrice <= 0m || basePrice > 100000m || decimal.Round(basePrice, 2) != basePrice)
         {
-            ShowAddProductError("Escribe un precio base mayor que cero.");
+            ShowAddProductError("Escribe un precio base mayor que cero, hasta $100,000 y con hasta dos decimales.");
             return;
         }
 
         bool allowsExtras = NewProductAllowsExtras.IsToggled;
         decimal extraPrice = 0m;
-        if (allowsExtras && (!TryParseAmount(NewProductExtraPrice.Text, out extraPrice) || extraPrice <= 0m))
+        if (allowsExtras && (!TryParseAmount(NewProductExtraPrice.Text, out extraPrice) || extraPrice <= 0m || extraPrice > 100000m || decimal.Round(extraPrice, 2) != extraPrice))
         {
-            ShowAddProductError("Escribe un precio por extra mayor que cero.");
+            ShowAddProductError("Escribe un precio por extra mayor que cero, hasta $100,000 y con hasta dos decimales.");
             return;
         }
 
-        string? categoryName = NewProductCategory.SelectedItem?.ToString();
+        string? categoryName = _newProductCategoryName;
         Enum.TryParse(categoryName, out ProductCategory category);
         if (string.IsNullOrWhiteSpace(categoryName))
         {
@@ -459,44 +554,125 @@ public partial class MainPage : ContentPage
         }
     }
 
-    private async void OnNewCategoryClicked(object? sender, EventArgs e)
+    private void SetProductCategory(string? name)
     {
-        string? name = await DisplayPromptAsync("Nueva categoría", "Nombre de la categoría", "Agregar", "Cancelar", maxLength: 80);
-        if (name is null) return;
-        try
-        {
-            string saved = await _ticketService.AddCategoryAsync(name);
-            await _viewModel.RefreshCategoriesAsync();
-            NewProductCategory.SelectedItem = saved;
-        }
-        catch (Exception ex) { ShowAddProductError(ex.Message); }
+        _newProductCategoryName = name;
+        NewProductCategoryButton.Text = name ?? "Elegir categor\u00eda";
     }
 
-    private async void OnCustomSaleClicked(object? sender, EventArgs e)
+    private void OnChooseProductCategoryClicked(object? sender, EventArgs e)
     {
-        if (_viewModel.IsBusy) return;
-        string? description = await DisplayPromptAsync("Venta personalizada", "Descripción del artículo (por ejemplo, cuchara)", "Continuar", "Cancelar", maxLength: 120);
-        if (description is null) return;
-        string? input = await DisplayPromptAsync("Precio de venta", description, "Agregar al ticket", "Cancelar", keyboard: Keyboard.Numeric);
-        if (input is null) return;
+        ProductCategoryChoices.Children.Clear();
+        foreach (string name in _viewModel.Categories)
+        {
+            bool selected = name == _newProductCategoryName;
+            var button = new Button
+            {
+                Text = name, MinimumHeightRequest = 64, FontSize = 20,
+                Padding = new Thickness(16, 12), CornerRadius = 12,
+                BackgroundColor = Color.FromArgb(selected ? "#8E1244" : "#FFF4F7"),
+                TextColor = selected ? Colors.White : Color.FromArgb("#8E1244")
+            };
+            button.Clicked += (_, _) =>
+            {
+                SetProductCategory(name);
+                ProductCategoryOverlay.IsVisible = false;
+            };
+            ProductCategoryChoices.Children.Add(button);
+        }
+        ProductCategoryOverlay.IsVisible = true;
+    }
+
+    private void OnCloseProductCategoriesClicked(object? sender, EventArgs e) => ProductCategoryOverlay.IsVisible = false;
+
+    private void OnNewCategoryClicked(object? sender, EventArgs e)
+    {
+        ProductCategoryOverlay.IsVisible = false;
+        NewCategoryName.Text = string.Empty;
+        NewCategoryError.IsVisible = false;
+        NewCategoryPanel.IsVisible = true;
+    }
+
+    private void OnCancelNewCategoryClicked(object? sender, EventArgs e)
+    {
+        NewCategoryName.Unfocus();
+        NewCategoryPanel.IsVisible = false;
+    }
+
+    private async void OnCreateCategoryClicked(object? sender, EventArgs e)
+    {
+        if (!CreateCategoryButton.IsEnabled) return;
+        CreateCategoryButton.IsEnabled = false;
+        NewCategoryError.IsVisible = false;
         try
         {
-            if (!decimal.TryParse(input.Trim().Replace(',', '.'), NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out decimal price))
-                throw new ArgumentException("Escribe un precio válido en pesos.");
-            _viewModel.AddCustomSale(description, price);
+            string saved = await _ticketService.AddCategoryAsync(NewCategoryName.Text ?? string.Empty);
+            await _viewModel.RefreshCategoriesAsync();
+            SetProductCategory(saved);
+            AddProductErrorPanel.IsVisible = false;
+            OnCancelNewCategoryClicked(sender, e);
         }
-        catch (Exception ex) { await DisplayAlert("Revisa la venta personalizada", ex.Message, "Aceptar"); }
+        catch (Exception ex)
+        {
+            NewCategoryError.Text = ex.Message;
+            NewCategoryError.IsVisible = true;
+        }
+        finally { CreateCategoryButton.IsEnabled = true; }
+    }
+
+    private void OnCustomSaleClicked(object? sender, EventArgs e)
+    {
+        if (_viewModel.IsBusy || CustomSaleOverlay.IsVisible) return;
+        CustomSaleName.Text = string.Empty;
+        _keypadTarget = KeypadTarget.CustomSale;
+        _replaceKeypadValue = false;
+        SetKeypadValue("0");
+        CustomSaleOverlay.IsVisible = true;
+    }
+
+    private void OnCustomSaleNameCompleted(object? sender, EventArgs e) => CustomSaleName.Unfocus();
+
+    private void OnCancelCustomSaleClicked(object? sender, EventArgs e)
+    {
+        CustomSaleName.Unfocus();
+        CustomSaleOverlay.IsVisible = false;
+        _keypadTarget = KeypadTarget.Cash;
+    }
+
+    private void OnAddCustomSaleClicked(object? sender, EventArgs e)
+    {
+        if (!CustomSaleOverlay.IsVisible || _viewModel.IsBusy) return;
+        try
+        {
+            string name = CustomSaleName.Text?.Trim() ?? string.Empty;
+            if (name.Length == 0) throw new ArgumentException("Escribe el nombre del art\u00edculo.");
+            if (!decimal.TryParse(_customSalePrice, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out decimal price)
+                || price <= 0m || price > 100000m)
+                throw new ArgumentException("Escribe un precio mayor que $0 y hasta $100,000.");
+            _viewModel.AddCustomSale(name, price);
+            OnCancelCustomSaleClicked(sender, e);
+        }
+        catch (ArgumentException ex)
+        {
+            CustomSaleError.Text = ex.Message;
+            CustomSaleError.IsVisible = true;
+        }
     }
 
     private void ResetAddProductForm()
     {
-        NewProductCategory.SelectedIndex = 0;
+        SetProductCategory(_viewModel.Categories.Contains(_viewModel.SelectedCategoryName)
+            ? _viewModel.SelectedCategoryName : _viewModel.Categories.FirstOrDefault());
+        ProductCategoryOverlay.IsVisible = false;
+        NewCategoryPanel.IsVisible = false;
+        NewCategoryName.Text = string.Empty;
+        NewCategoryError.IsVisible = false;
         NewProductName.Text = string.Empty;
-        NewProductPrice.Text = "0.00";
+        NewProductPrice.Text = "0";
         NewProductTag.Text = string.Empty;
         NewProductAllowsExtras.IsToggled = false;
         NewProductExtraName.Text = string.Empty;
-        NewProductExtraPrice.Text = "0.00";
+        NewProductExtraPrice.Text = "0";
         _selectedOpenverseImage = null;
         NewProductImagePreview.Source = "placeholder.png";
         NewProductImageAttribution.Text = "Ninguna foto seleccionada";
@@ -513,14 +689,14 @@ public partial class MainPage : ContentPage
     private static bool TryParseAmount(string? value, out decimal amount)
     {
         string normalized = (value ?? string.Empty).Trim().Replace(',', '.');
-        return decimal.TryParse(normalized, NumberStyles.Number, CultureInfo.InvariantCulture, out amount);
+        return decimal.TryParse(normalized, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out amount);
     }
 
     private void OnOpenversePickerClicked(object? sender, EventArgs e)
     {
         OpenverseGalleryOverlay.IsVisible = true;
         string productName = NewProductName.Text?.Trim() ?? string.Empty;
-        string category = NewProductCategory.SelectedItem?.ToString() ?? "Helados";
+        string category = _newProductCategoryName ?? "Helados";
         OpenverseSearchEntry.Text = productName;
         ShowLocalLibrary(category);
     }
@@ -549,7 +725,7 @@ public partial class MainPage : ContentPage
         string query = OpenverseSearchEntry.Text?.Trim() ?? string.Empty;
         if (query.Length == 0)
         {
-            string category = NewProductCategory.SelectedItem?.ToString() ?? "Helados";
+            string category = _newProductCategoryName ?? "Helados";
             query = CategorySearchTerm(category);
             OpenverseSearchEntry.Text = query;
         }

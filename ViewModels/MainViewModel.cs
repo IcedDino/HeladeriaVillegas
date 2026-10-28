@@ -23,6 +23,7 @@ public partial class MainViewModel : ObservableObject
     private int _tutorialGeneration;
     private OrderDraftService.Draft? _tutorialOriginal;
     private ProductCategory _tutorialCategory;
+    private string _tutorialCategoryName = "Helados";
     public bool IsTutorialMode => _tutorialMode;
     public event EventHandler? TutorialCheckoutCompleted;
 
@@ -32,6 +33,7 @@ public partial class MainViewModel : ObservableObject
         _tutorialOriginal = System.Text.Json.JsonSerializer.Deserialize<OrderDraftService.Draft>(
             System.Text.Json.JsonSerializer.Serialize(Snapshot()))!;
         _tutorialCategory = SelectedCategory;
+        _tutorialCategoryName = SelectedCategoryName;
         _tutorialMode = true;
         _tutorialGeneration++;
         CreateNewOrder();
@@ -49,7 +51,7 @@ public partial class MainViewModel : ObservableObject
         if (!_tutorialMode) return;
         if (_tutorialOriginal is not null) RestoreDraft(_tutorialOriginal);
         SelectedCategory = _tutorialCategory;
-        SelectedCategoryName = _tutorialCategory.ToString();
+        SelectedCategoryName = _tutorialCategoryName;
         ApplyCategoryFilter();
         _tutorialMode = false;
         OnPropertyChanged(nameof(OrderDisplayName));
@@ -66,9 +68,13 @@ public partial class MainViewModel : ObservableObject
 
     public async Task RefreshCategoriesAsync()
     {
+        string? previous = SelectedCategoryName;
         var names = await _ticketService.GetCategoriesAsync();
         Categories.Clear();
         foreach (string name in names) Categories.Add(name);
+        SelectedCategoryName = names.FirstOrDefault(name => name == previous)
+            ?? names.FirstOrDefault(name => name == "Helados") ?? names.FirstOrDefault() ?? string.Empty;
+        ApplyCategoryFilter();
     }
 
     public void AddCustomSale(string description, decimal price)

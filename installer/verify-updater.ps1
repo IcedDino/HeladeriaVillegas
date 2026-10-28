@@ -1,5 +1,6 @@
-﻿$ErrorActionPreference = 'Stop'
-$scriptPath = Join-Path $PSScriptRoot 'apply-update.ps1'
+﻿param([string]$UpdaterScriptPath, [switch]$LegacyInno)
+$ErrorActionPreference = 'Stop'
+$scriptPath = if ($UpdaterScriptPath) { $UpdaterScriptPath } else { Join-Path $PSScriptRoot 'apply-update.ps1' }
 if (!(Test-Path -LiteralPath $scriptPath)) { throw 'FAIL: updater script does not exist' }
 $fixture = Join-Path ([IO.Path]::GetTempPath()) ('updater-fixture-' + [Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Force -Path $fixture | Out-Null
@@ -39,12 +40,15 @@ try {
     if (!$ready.WaitOne(0)) { throw 'FAIL: helper must signal readiness before app shuts down' }
     if ($result -ne 0 -or $script:InstallerCalls -ne 1 -or $script:RestartCalls -ne 1 -or (Test-Path -LiteralPath $pendingPath)) { throw 'FAIL: successful installation clears pending and reopens' }
 
-    $legacyArguments = @(Get-InstallerArguments $app 'test.log')
-    if ($legacyArguments[0] -ne '/VERYSILENT') { throw 'FAIL: legacy installer arguments' }
-    Remove-Item -LiteralPath (Join-Path $app 'unins000.exe')
-    Set-Content -LiteralPath (Join-Path $app 'uninstall.exe') -Value 'NSIS marker'
-    $nsisArguments = @(Get-InstallerArguments $app 'test.log')
-    if ($nsisArguments.Count -ne 2 -or $nsisArguments[0] -cne '/S' -or $nsisArguments[1] -cne ('/D=' + $app)) { throw 'FAIL: NSIS silent arguments and destination' }
+    if (!$LegacyInno) {
+        $legacyArguments = @(Get-InstallerArguments $app 'test.log')
+        if ($legacyArguments[0] -ne '/VERYSILENT') { throw 'FAIL: legacy installer arguments' }
+        Remove-Item -LiteralPath (Join-Path $app 'unins000.exe')
+        Set-Content -LiteralPath (Join-Path $app 'uninstall.exe') -Value 'NSIS marker'
+        $nsisArguments = @(Get-InstallerArguments $app 'test.log')
+        if ($nsisArguments.Count -ne 2 -or $nsisArguments[0] -cne '/S' -or $nsisArguments[1] -cne ('/D=' + $app)) { throw 'FAIL: NSIS silent arguments and destination' }
+
+    }
 
     $script:InstallerResult = 1
     @{ Package=$package; LastAttemptUtc='2026-10-05T12:00:00Z' } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $pendingPath

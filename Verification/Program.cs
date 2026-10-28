@@ -121,6 +121,11 @@ try
             tickets, activeCashOrder, tutorialBackups);
         await cashViewModel.LoadAsync();
         Check(cashViewModel.Cart.Single().Model.ProductName == "Orden real pendiente", "Caja recupera orden antes de iniciar guía");
+        Check(cashViewModel.FilteredProducts.Count > 0, "Initial category displays products");
+        cashViewModel.Categories.CollectionChanged += (_, _) => cashViewModel.SelectedCategoryName = null!;
+        await cashViewModel.RefreshCategoriesAsync();
+        Check(cashViewModel.SelectedCategoryName == "Helados" && cashViewModel.FilteredProducts.Count > 0,
+            "Category refresh restores selection after a native picker clears it");
         int catalogCount = (await tickets.GetAllProductsAsync()).Count;
         cashViewModel.AddCustomSale("Cuchara", 1m);
         Check(cashViewModel.Cart.Last().Model.ProductName == "Cuchara" && cashViewModel.Total == 91m,

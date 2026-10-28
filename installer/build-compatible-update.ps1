@@ -40,6 +40,19 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Falló la compilación del instalador' }
     $installer = Join-Path $root 'artifacts/installer/HeladeriaVillegas-Setup-x64.exe'
     Get-FileHash -LiteralPath $installer -Algorithm SHA256 | Format-List
+    & (Join-Path $PSScriptRoot 'verify-legacy-update.ps1') -Version $Version -InstallerPath $installer -DotnetPath $DotnetPath
+    $file = Get-Item -LiteralPath $installer
+    [ordered]@{
+        Version = $Version
+        Tag = "v$Version"
+        File = $file.Name
+        Bytes = $file.Length
+        Sha256 = (Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash.ToLowerInvariant()
+        InstallerEngine = 'Inno Setup'
+        CompatibleWith = '1.0.0'
+        OriginalUpdaterCheck = 'passed (simulated HTTP; actual installer bytes)'
+        Published = $false
+    } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path (Split-Path $installer) 'release-readiness.json') -Encoding UTF8
 } finally {
     Pop-Location
 }

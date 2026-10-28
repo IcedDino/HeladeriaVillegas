@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LegacySources>$(MSBuildThisFileDirectory)..\..\artifacts\legacy-update-check\Sources</LegacySources>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(LegacySources)\*.cs" Link="Original\%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>
