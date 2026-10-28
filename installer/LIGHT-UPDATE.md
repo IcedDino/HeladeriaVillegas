@@ -13,3 +13,7 @@ Mantiene la carpeta de instalación y la identidad de datos `Nerqova/com.cesardo
 El asset original publicado tiene un fallo al reconocer su instalación NSIS. Esas instalaciones requieren ejecutar el paquete correctivo una vez, conservando datos y sin desinstalar. Publicar un Release no corrige el código que ya está instalado. Las pruebas HTTP con el código del tag original comprueban el protocolo, pero no reemplazan la prueba real del binario publicado.
 
 `Verification --preserve-db ruta/pos.db` prueba dos inicializaciones sobre una copia SQLite consistente de una base existente, verifica todos los valores originales de cada fila y ejecuta `PRAGMA integrity_check`. Nunca modifica la base de origen. La suite también realiza esta prueba con productos personalizados, una categoría, ventas pagadas y canceladas, detalles y modificadores.
+
+`Verification --compare-db antes.db despues.db` compara todas las filas y columnas originales contra la base realmente instalada y comprueba su integridad, abriendo ambas en modo de solo lectura.
+
+La prueba real está documentada en [update-verification-2026-10-28.md](../docs/update-verification-2026-10-28.md). `verify-installed-update.ps1` requiere elevación y una caja cerrada. Su opción `-RepairLegacyMarker` realiza una intervención local explícita después de comprobar el fallo original; no debe presentarse como una actualización automática sin intervención.

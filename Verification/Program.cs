@@ -9,6 +9,11 @@ if (args.Length == 2 && args[0] == "--inspect-updater")
     InstalledUpdaterInspection.Run(args[1]);
     return;
 }
+if (args.Length == 3 && args[0] == "--compare-db")
+{
+    DataPreservationChecks.Compare(args[1], args[2]);
+    return;
+}
 
 await UpdateChecks.RunAsync();
 await UpdateCoordinatorChecks.RunAsync();

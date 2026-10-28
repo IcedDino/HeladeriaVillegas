@@ -21,6 +21,21 @@ internal static class DataPreservationChecks
             await new DatabaseInitializer(factory).InitializeAsync();
             using var connection = new SqliteConnection($"Data Source={target}");
             connection.Open();
+            VerifySnapshot(connection, before);
+            Console.WriteLine("OK: real database COPY migration and integrity; source never modified");
+        }
+        finally { SqliteConnection.ClearAllPools(); foreach (var suffix in new[] { "", "-wal", "-shm" }) if (File.Exists(target + suffix)) File.Delete(target + suffix); }
+    }
+    public static void Compare(string beforePath, string afterPath)
+    {
+        var before = Snapshot(beforePath);
+        using var connection = new SqliteConnection(new SqliteConnectionStringBuilder { DataSource = Path.GetFullPath(afterPath), Mode = SqliteOpenMode.ReadOnly }.ToString());
+        connection.Open();
+        VerifySnapshot(connection, before);
+        Console.WriteLine("OK: installed database retains every original row and field; integrity_check=ok");
+    }
+    private static void VerifySnapshot(SqliteConnection connection, Dictionary<string, (string[] Columns, List<string> Rows)> before)
+    {
             foreach (var table in before)
             {
                 using var command = connection.CreateCommand();
@@ -29,17 +44,14 @@ internal static class DataPreservationChecks
                 var after = new HashSet<string>();
                 while (reader.Read()) after.Add(Row(reader));
                 if (table.Value.Rows.Any(row => !after.Contains(row))) throw new Exception("Existing data was modified: " + table.Key);
-                Console.WriteLine($"OK: {table.Key}: {table.Value.Rows.Count} original rows preserved, all original fields unchanged after two initializations");
+                Console.WriteLine($"OK: {table.Key}: {table.Value.Rows.Count} original rows preserved, all original fields unchanged");
             }
             using var integrity = connection.CreateCommand(); integrity.CommandText = "PRAGMA integrity_check";
             if ((string?)integrity.ExecuteScalar() != "ok") throw new Exception("Database integrity check failed");
-            Console.WriteLine("OK: real database COPY migration and integrity; source never modified");
-        }
-        finally { SqliteConnection.ClearAllPools(); foreach (var suffix in new[] { "", "-wal", "-shm" }) if (File.Exists(target + suffix)) File.Delete(target + suffix); }
     }
     private static Dictionary<string, (string[] Columns, List<string> Rows)> Snapshot(string path)
     {
-        using var connection = new SqliteConnection($"Data Source={path}"); connection.Open();
+        using var connection = new SqliteConnection(new SqliteConnectionStringBuilder { DataSource = Path.GetFullPath(path), Mode = SqliteOpenMode.ReadOnly }.ToString()); connection.Open();
         using var tables = connection.CreateCommand();
         tables.CommandText = "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'";
         var names = new List<string>(); using (var reader = tables.ExecuteReader()) while (reader.Read()) names.Add(reader.GetString(0));
