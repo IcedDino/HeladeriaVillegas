@@ -18,6 +18,7 @@ public sealed class DatabaseInitializer
         await using var db = await _factory.CreateDbContextAsync();
         await db.Database.EnsureCreatedAsync();
 
+        await db.Database.ExecuteSqlRawAsync("CREATE TABLE IF NOT EXISTS CatalogCategories (Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, Name TEXT NOT NULL);");
         await EnsureProductColumnsAsync(db);
         await EnsureSalesColumnsAsync(db);
         await EnsureFlavorTableAsync(db);
@@ -102,6 +103,7 @@ public sealed class DatabaseInitializer
 
             string[] migrations =
             [
+                "CustomCategory TEXT NULL",
                 "AllowsExtras INTEGER NOT NULL DEFAULT 0",
                 "ExtraName TEXT NULL",
                 "ExtraPrice INTEGER NOT NULL DEFAULT 0",

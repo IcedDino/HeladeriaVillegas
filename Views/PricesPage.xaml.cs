@@ -132,7 +132,7 @@ public sealed partial class PricesPage : ContentPage
             var headingRow = new Grid { ColumnDefinitions = { new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto) }, ColumnSpacing = 8 };
             var headings = new VerticalStackLayout { Spacing = 1 };
             headings.Children.Add(new Label { Text = product.Name, FontSize = 17, FontAttributes = FontAttributes.Bold });
-            headings.Children.Add(new Label { Text = $"{product.Category} · {(product.ProductType == ProductType.Custom ? "Producto propio" : "Clásico")}{(string.IsNullOrWhiteSpace(product.Tag) ? "" : $" · {product.Tag}")}", FontSize = 12, TextColor = Color.FromArgb("#745A64") });
+            headings.Children.Add(new Label { Text = $"{product.CategoryName} · {(product.ProductType == ProductType.Custom ? "Producto propio" : "Clásico")}{(string.IsNullOrWhiteSpace(product.Tag) ? "" : $" · {product.Tag}")}", FontSize = 12, TextColor = Color.FromArgb("#745A64") });
             headingRow.Add(headings);
             var switchHolder = new VerticalStackLayout { Spacing = 2 };
             switchHolder.Children.Add(new Label { Text = "Disponible", FontSize = 11, TextColor = Color.FromArgb("#745A64"), HorizontalTextAlignment = TextAlignment.Center });
@@ -146,6 +146,25 @@ public sealed partial class PricesPage : ContentPage
             headingRow.Add(switchHolder);
             Grid.SetColumn(switchHolder, 1);
             stack.Children.Add(headingRow);
+            var categoryButton = TinyButton("Cambiar categoría", "#FFF0F3", "#84124B");
+            categoryButton.Clicked += async (_, _) =>
+            {
+                const string newOption = "+ Nueva categoría";
+                string? chosen = await DisplayActionSheet("Categoría de " + product.Name, "Cancelar", null,
+                    (await _tickets.GetCategoriesAsync()).Append(newOption).ToArray());
+                if (chosen is null || chosen == "Cancelar") return;
+                if (chosen == newOption)
+                    chosen = await DisplayPromptAsync("Nueva categoría", "Nombre de la categoría", "Guardar", "Cancelar", maxLength: 80);
+                if (chosen is null) return;
+                try
+                {
+                    await _tickets.SetProductCategoryAsync(product.Id, chosen);
+                    await _main.RefreshProductsAsync();
+                    await ReloadAsync();
+                }
+                catch (Exception ex) { await DisplayAlert("No se guardó la categoría", ex.Message, "Aceptar"); }
+            };
+            stack.Children.Add(categoryButton);
 
             if (product.ProductType == ProductType.Custom)
             {

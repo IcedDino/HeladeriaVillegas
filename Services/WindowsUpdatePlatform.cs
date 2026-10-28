@@ -29,7 +29,7 @@ public sealed class WindowsUpdatePlatform : IDisposable
 #if DEBUG
         return false;
 #else
-        return File.Exists(Path.Combine(_directory, "unins000.exe"))
+        return (File.Exists(Path.Combine(_directory, "uninstall.exe")) || File.Exists(Path.Combine(_directory, "unins000.exe")))
             && File.Exists(Path.Combine(_directory, "apply-update.ps1"));
 #endif
     }

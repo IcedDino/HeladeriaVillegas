@@ -6,6 +6,7 @@ namespace HeladeriaPOS.Data;
 
 public sealed class PosDbContext : DbContext
 {
+    public DbSet<CatalogCategory> CatalogCategories => Set<CatalogCategory>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<Ticket> Tickets => Set<Ticket>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();

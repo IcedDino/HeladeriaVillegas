@@ -13,6 +13,36 @@ public sealed class TicketService
         _factory = factory;
     }
 
+    public async Task<List<string>> GetCategoriesAsync()
+    {
+        await using var db = await _factory.CreateDbContextAsync();
+        var names = await db.CatalogCategories.Select(c => c.Name).ToListAsync();
+        names.AddRange((await db.Products.AsNoTracking().ToListAsync()).Select(p => p.CategoryName));
+        return new[] { "Helados", "Snacks", "Especialidades" }.Concat(names)
+            .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
+    public async Task<string> AddCategoryAsync(string name)
+    {
+        name = name.Trim();
+        if (name.Length == 0 || name.Length > 80) throw new ArgumentException("Escribe una categoría de 1 a 80 caracteres.");
+        string? existing = (await GetCategoriesAsync()).FirstOrDefault(c => string.Equals(c, name, StringComparison.OrdinalIgnoreCase));
+        if (existing is not null) return existing;
+        await using var db = await _factory.CreateDbContextAsync();
+        db.CatalogCategories.Add(new CatalogCategory { Name = name });
+        await db.SaveChangesAsync();
+        return name;
+    }
+
+    public async Task SetProductCategoryAsync(int id, string name)
+    {
+        name = await AddCategoryAsync(name);
+        await using var db = await _factory.CreateDbContextAsync();
+        var product = await db.Products.SingleAsync(p => p.Id == id);
+        product.CustomCategory = name;
+        await db.SaveChangesAsync();
+    }
+
     public async Task<List<Product>> GetProductsAsync()
     {
         await using var db = await _factory.CreateDbContextAsync();

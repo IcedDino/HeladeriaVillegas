@@ -5,6 +5,9 @@ public sealed class Product
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public ProductCategory Category { get; set; }
+    public string? CustomCategory { get; set; }
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public string CategoryName => CustomCategory ?? Category.ToString();
     public ProductType ProductType { get; set; }
     public decimal BasePrice { get; set; }
     public string? ImagePath { get; set; }

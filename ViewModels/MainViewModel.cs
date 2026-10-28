@@ -36,6 +36,7 @@ public partial class MainViewModel : ObservableObject
         _tutorialGeneration++;
         CreateNewOrder();
         SelectedCategory = ProductCategory.Helados;
+        SelectedCategoryName = "Helados";
         ApplyCategoryFilter();
         if (practice is not null) RestoreDraft(practice);
         StatusMessage = "Tutorial de ventas · DEMO";
@@ -48,6 +49,7 @@ public partial class MainViewModel : ObservableObject
         if (!_tutorialMode) return;
         if (_tutorialOriginal is not null) RestoreDraft(_tutorialOriginal);
         SelectedCategory = _tutorialCategory;
+        SelectedCategoryName = _tutorialCategory.ToString();
         ApplyCategoryFilter();
         _tutorialMode = false;
         OnPropertyChanged(nameof(OrderDisplayName));
@@ -56,6 +58,35 @@ public partial class MainViewModel : ObservableObject
         StatusMessage = "Listo para vender";
     }
     private OrderDraftService.Draft? _lastCleared;
+
+    public ObservableCollection<string> Categories { get; } = [];
+    [ObservableProperty]
+    private string selectedCategoryName = "Helados";
+    partial void OnSelectedCategoryNameChanged(string value) => ApplyCategoryFilter();
+
+    public async Task RefreshCategoriesAsync()
+    {
+        var names = await _ticketService.GetCategoriesAsync();
+        Categories.Clear();
+        foreach (string name in names) Categories.Add(name);
+    }
+
+    public void AddCustomSale(string description, decimal price)
+    {
+        if (IsBusy) return;
+        description = description.Trim();
+        if (description.Length == 0 || description.Length > 120)
+            throw new ArgumentException("Escribe una descripción de 1 a 120 caracteres.");
+        if (price <= 0m || price > 100000m || decimal.Round(price, 2) != price)
+            throw new ArgumentException("Escribe un precio mayor que cero, hasta $100,000 y con máximo dos decimales.");
+        Cart.Add(new OrderItemViewModel(new OrderItem
+        {
+            ProductId = 0, ProductName = description, BaseUnitPrice = price, Quantity = 1
+        }, RemoveItem, CalculateTotal));
+        NotifyCartStateChanged();
+        CalculateTotal();
+        StatusMessage = $"{description} agregado al ticket";
+    }
 
     public ObservableCollection<ProductCardViewModel> Products { get; } = [];
     public ObservableCollection<ProductCardViewModel> FilteredProducts { get; } = [];
@@ -227,6 +258,7 @@ public partial class MainViewModel : ObservableObject
             for (int i = 0; i < products.Count; i++)
                 Products.Add(new ProductCardViewModel(products[i], SelectProductAsync));
 
+            await RefreshCategoriesAsync();
             ApplyCategoryFilter();
             OrderDraftService.Draft? draft = _draftService.LoadCurrent();
             if (draft is not null && await _ticketService.IsOrderRegisteredAsync(draft.OrderNumber))
@@ -265,12 +297,13 @@ public partial class MainViewModel : ObservableObject
         bool allowsExtras,
         string? extraName,
         decimal extraPrice,
-        OpenverseImageResult? image)
+        OpenverseImageResult? image, string? categoryName = null)
     {
         var product = new Product
         {
             Name = name.Trim(),
             Category = category,
+            CustomCategory = categoryName,
             ProductType = ProductType.Custom,
             BasePrice = basePrice,
             Tag = string.IsNullOrWhiteSpace(tag) ? "Personalizado" : tag.Trim(),
@@ -291,8 +324,8 @@ public partial class MainViewModel : ObservableObject
 
         var card = new ProductCardViewModel(product, SelectProductAsync);
         Products.Add(card);
-        if (product.Category == SelectedCategory)
-            FilteredProducts.Add(card);
+        await RefreshCategoriesAsync();
+        ApplyCategoryFilter();
 
         StatusMessage = $"Producto {product.Name} agregado";
     }
@@ -307,6 +340,7 @@ public partial class MainViewModel : ObservableObject
             return;
 
         SelectedCategory = category;
+        SelectedCategoryName = category.ToString();
         ApplyCategoryFilter();
     }
 
@@ -316,7 +350,7 @@ public partial class MainViewModel : ObservableObject
         for (int i = 0; i < Products.Count; i++)
         {
             ProductCardViewModel product = Products[i];
-            if (product.Model.Category == SelectedCategory)
+            if (product.Model.CategoryName == SelectedCategoryName)
                 FilteredProducts.Add(product);
         }
     }
@@ -379,6 +413,7 @@ public partial class MainViewModel : ObservableObject
         Products.Clear();
         foreach (Product product in products)
             Products.Add(new ProductCardViewModel(product, SelectProductAsync));
+        await RefreshCategoriesAsync();
         ApplyCategoryFilter();
     }
 

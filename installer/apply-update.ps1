@@ -1,4 +1,4 @@
-param([string]$ConfigurationPath)
+﻿param([string]$ConfigurationPath)
 $ErrorActionPreference = 'Stop'
 
 function Write-UpdateLog([string]$Directory, [string]$Message) {
@@ -17,10 +17,19 @@ function Get-POSInstances([string]$ExecutablePath) {
     return $matches
 }
 
-function Invoke-Installer([string]$Installer, [string]$InstallDirectory, [string]$LogPath) {
+function Get-InstallerArguments([string]$InstallDirectory, [string]$LogPath) {
     # Windows paths cannot contain double quotes. ArgumentList needs explicit quoting in Windows PowerShell 5.1.
     $arguments = @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/NOCLOSEAPPLICATIONS', '/NORESTARTAPPLICATIONS',
         ('/DIR="' + $InstallDirectory + '"'), ('/LOG="' + $LogPath + '"'))
+    if (Test-Path -LiteralPath (Join-Path $InstallDirectory 'uninstall.exe')) {
+        # NSIS requires /D as the final argument without surrounding quotes.
+        $arguments = @('/S', ('/D=' + $InstallDirectory))
+    }
+    return $arguments
+}
+
+function Invoke-Installer([string]$Installer, [string]$InstallDirectory, [string]$LogPath) {
+    $arguments = @(Get-InstallerArguments $InstallDirectory $LogPath)
     $process = Start-Process -FilePath $Installer -ArgumentList $arguments -WindowStyle Hidden -Wait -PassThru
     return $process.ExitCode
 }
@@ -42,7 +51,7 @@ function Invoke-PendingUpdate([string]$ConfigPath) {
         $executable = [IO.Path]::GetFullPath([string]$config.ExecutablePath)
         if ($executable -ne $config.ExecutablePath -or [IO.Path]::GetFileName($executable) -ne 'HeladeriaPOS.Maui.exe') { throw 'Invalid executable path.' }
         $appDirectory = [IO.Path]::GetDirectoryName($executable)
-        if (!(Test-Path -LiteralPath $executable) -or !(Test-Path -LiteralPath (Join-Path $appDirectory 'unins000.exe'))) { throw 'Installed POS not found.' }
+        if (!(Test-Path -LiteralPath $executable) -or (!(Test-Path -LiteralPath (Join-Path $appDirectory 'unins000.exe')) -and !(Test-Path -LiteralPath (Join-Path $appDirectory 'uninstall.exe')))) { throw 'Installed POS not found.' }
         $mayReopen = $true
 
         # A PID can be reused; only wait for the original process with its exact creation time and executable.

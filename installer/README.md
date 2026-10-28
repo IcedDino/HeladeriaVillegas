@@ -8,6 +8,12 @@ Requiere Windows 10 versión 1809 o superior, o Windows 11, de 64 bits. Se recom
 
 Ejecutar `installer/build-installer.ps1 -Version 1.0.0`. Admite `-DotnetPath`, `-NsisPath` y `-SigningCertThumbprint` si las herramientas o el certificado están en ubicaciones distintas. La versión es obligatoria y debe usar `major.minor.patch`; se aplica al ejecutable y al instalador. Las dependencias descargadas se guardan en `artifacts/prerequisites` y se valida su firma de Microsoft antes de empaquetarlas. Se requiere un certificado con clave privada y sujeto `CN=Nerqova` en el almacén Personal del usuario actual.
 
+## Actualizar instalaciones 1.0.0
+
+Para la primera actualizacion desde `1.0.0`, usar `installer/build-compatible-update.ps1 -Version 1.0.1`. Este genera un instalador Inno Setup con el mismo AppId, carpeta y nombre de archivo que la version original. El auxiliar de 1.0.0 solo entiende los argumentos de Inno Setup; publicar directamente un instalador NSIS no es compatible. Este proceso no firma los binarios; para distribuirlos firmados se necesita el certificado de firma correspondiente.
+
+La version nueva reconoce instalaciones Inno y NSIS. La seleccion de argumentos se verifica en `verify-updater.ps1`. Mientras existan clientes 1.0.0, los instaladores publicados deben continuar usando Inno Setup. Una migracion futura a NSIS requiere un puente que acepte el protocolo anterior.
+
 ## Publicar actualizaciones
 
 1. Generar un instalador con una versión superior a la instalada, por ejemplo `1.0.1`.

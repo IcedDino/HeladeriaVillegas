@@ -130,13 +130,6 @@ public partial class MainPage : ContentPage
         MainContent.ColumnDefinitions[1].Width = new GridLength(sidebarWidth);
 
         bool compact = width < 1024;
-        double categoryFontSize = compact ? 13 : 17;
-        Thickness categoryPadding = compact ? new Thickness(8) : new Thickness(16, 10);
-        foreach (Button categoryButton in new[] { HeladosCategoryButton, SnacksCategoryButton, SpecialtiesCategoryButton })
-        {
-            categoryButton.FontSize = categoryFontSize;
-            categoryButton.Padding = categoryPadding;
-        }
         PaymentCard.Margin = compact ? new Thickness(16) : new Thickness(32);
 
         double catalogWidth = width - sidebarWidth - 56;
@@ -433,7 +426,9 @@ public partial class MainPage : ContentPage
             return;
         }
 
-        if (!Enum.TryParse(NewProductCategory.SelectedItem?.ToString(), out ProductCategory category))
+        string? categoryName = NewProductCategory.SelectedItem?.ToString();
+        Enum.TryParse(categoryName, out ProductCategory category);
+        if (string.IsNullOrWhiteSpace(categoryName))
         {
             ShowAddProductError("Selecciona una categoría.");
             return;
@@ -450,7 +445,7 @@ public partial class MainPage : ContentPage
                 allowsExtras,
                 NewProductExtraName.Text,
                 extraPrice,
-                _selectedOpenverseImage);
+                _selectedOpenverseImage, categoryName);
 
             AddProductOverlay.IsVisible = false;
         }
@@ -462,6 +457,35 @@ public partial class MainPage : ContentPage
         {
             SaveProductButton.IsEnabled = true;
         }
+    }
+
+    private async void OnNewCategoryClicked(object? sender, EventArgs e)
+    {
+        string? name = await DisplayPromptAsync("Nueva categoría", "Nombre de la categoría", "Agregar", "Cancelar", maxLength: 80);
+        if (name is null) return;
+        try
+        {
+            string saved = await _ticketService.AddCategoryAsync(name);
+            await _viewModel.RefreshCategoriesAsync();
+            NewProductCategory.SelectedItem = saved;
+        }
+        catch (Exception ex) { ShowAddProductError(ex.Message); }
+    }
+
+    private async void OnCustomSaleClicked(object? sender, EventArgs e)
+    {
+        if (_viewModel.IsBusy) return;
+        string? description = await DisplayPromptAsync("Venta personalizada", "Descripción del artículo (por ejemplo, cuchara)", "Continuar", "Cancelar", maxLength: 120);
+        if (description is null) return;
+        string? input = await DisplayPromptAsync("Precio de venta", description, "Agregar al ticket", "Cancelar", keyboard: Keyboard.Numeric);
+        if (input is null) return;
+        try
+        {
+            if (!decimal.TryParse(input.Trim().Replace(',', '.'), NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out decimal price))
+                throw new ArgumentException("Escribe un precio válido en pesos.");
+            _viewModel.AddCustomSale(description, price);
+        }
+        catch (Exception ex) { await DisplayAlert("Revisa la venta personalizada", ex.Message, "Aceptar"); }
     }
 
     private void ResetAddProductForm()

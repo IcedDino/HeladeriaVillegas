@@ -121,6 +121,24 @@ try
             tickets, activeCashOrder, tutorialBackups);
         await cashViewModel.LoadAsync();
         Check(cashViewModel.Cart.Single().Model.ProductName == "Orden real pendiente", "Caja recupera orden antes de iniciar guía");
+        int catalogCount = (await tickets.GetAllProductsAsync()).Count;
+        cashViewModel.AddCustomSale("Cuchara", 1m);
+        Check(cashViewModel.Cart.Last().Model.ProductName == "Cuchara" && cashViewModel.Total == 91m,
+            "Custom sale adds description and price to ticket");
+        Check((await tickets.GetAllProductsAsync()).Count == catalogCount, "Custom sale does not create a catalog product");
+        Check(activeCashOrder.LoadCurrent()!.Items.Last().BaseUnitPrice == 1m, "Custom sale survives draft save");
+        cashViewModel.Cart.Last().RemoveCommand.Execute(null);
+        string categoryName = await tickets.AddCategoryAsync("Aguas frescas");
+        Check(await tickets.AddCategoryAsync(" aguas FRESCAS ") == categoryName, "Category names ignore case and whitespace");
+        var categoryProduct = new Product { Name = "Agua de prueba", ProductType = ProductType.Custom, BasePrice = 20m };
+        await tickets.AddProductAsync(categoryProduct);
+        await tickets.SetProductCategoryAsync(categoryProduct.Id, categoryName);
+        await cashViewModel.RefreshProductsAsync();
+        cashViewModel.SelectedCategoryName = categoryName;
+        Check(cashViewModel.Categories.Contains(categoryName) && cashViewModel.FilteredProducts.Single().Name == "Agua de prueba",
+            "New category appears and filters products immediately");
+        await tickets.SetProductActiveAsync(categoryProduct.Id, false);
+        cashViewModel.SelectedCategoryName = "Helados";
         cashViewModel.BeginTutorial();
         Check(cashViewModel.IsTutorialMode && cashViewModel.Cart.Count == 0, "Guía usa caja original con ticket temporal");
         var demoCard = cashViewModel.FilteredProducts.First(p => p.Model.ProductType == ProductType.Vaso);

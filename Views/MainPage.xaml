@@ -77,24 +77,15 @@
                 </Grid>
                 
                 <!--Categories -->
-                <Grid x:Name='Categories' Grid.Row="1" ColumnDefinitions="*,*,*" ColumnSpacing="12" HorizontalOptions="Fill" VerticalOptions="Fill">
-                    <Button x:Name="HeladosCategoryButton" Text="🍦  Helados" Grid.Column="0" HorizontalOptions="Fill" VerticalOptions="Fill" Style="{StaticResource CategoryButtonStyle}" Command="{Binding SelectCategoryCommand}" CommandParameter="Helados">
-                            <Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding IsHeladosSelected}" Value="True">
-                                <Setter Property="BackgroundColor" Value="{StaticResource BrandDarkRed}" /><Setter Property="TextColor" Value="White" />
-                            </DataTrigger></Button.Triggers>
-                    </Button>
-                    <Button x:Name="SnacksCategoryButton" Text="🥨  Snacks" Grid.Column="1" HorizontalOptions="Fill" VerticalOptions="Fill" Style="{StaticResource CategoryButtonStyle}" Command="{Binding SelectCategoryCommand}" CommandParameter="Snacks">
-                            <Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding IsSnacksSelected}" Value="True">
-                                <Setter Property="BackgroundColor" Value="{StaticResource BrandDarkRed}" /><Setter Property="TextColor" Value="White" />
-                            </DataTrigger></Button.Triggers>
-                    </Button>
-                    <Button x:Name="SpecialtiesCategoryButton" Text="★  Especialidades" Grid.Column="2" HorizontalOptions="Fill" VerticalOptions="Fill" Style="{StaticResource CategoryButtonStyle}" Command="{Binding SelectCategoryCommand}" CommandParameter="Especialidades">
-                            <Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding IsEspecialidadesSelected}" Value="True">
-                                <Setter Property="BackgroundColor" Value="{StaticResource BrandDarkRed}" /><Setter Property="TextColor" Value="White" />
-                            </DataTrigger></Button.Triggers>
-                    </Button>
-                </Grid>
+                <VerticalStackLayout x:Name="Categories" Grid.Row="1" Spacing="6">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <Picker Title="Categoría" ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategoryName}" HeightRequest="52" />
+                        <Button Grid.Column="1" Text="Venta personalizada" Clicked="OnCustomSaleClicked" Style="{StaticResource TouchButtonStyle}" />
+                    </Grid>
+
                 
+                </VerticalStackLayout>
+
                 <!-- Catalogue -->
                 <CollectionView x:Name="ProductCollectionView" Grid.Row="2" ItemsSource="{Binding FilteredProducts}" SelectionMode="None" ItemsUpdatingScrollMode="KeepScrollOffset">
                         <CollectionView.ItemsLayout>
@@ -323,14 +314,8 @@
                             <VerticalStackLayout Spacing="9">
                                 <Label Text="DATOS PRINCIPALES" FontSize="12" CharacterSpacing="1.2" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
                                 <Label Text="Categoría" FontSize="16" FontAttributes="Bold" />
-                                <Picker x:Name="NewProductCategory" Title="Selecciona una categoría" SelectedIndex="0" HeightRequest="56"
-                                        BackgroundColor="#FFF9FB">
-                                    <Picker.Items>
-                                        <x:String>Helados</x:String>
-                                        <x:String>Snacks</x:String>
-                                        <x:String>Especialidades</x:String>
-                                    </Picker.Items>
-                                </Picker>
+                                <Picker x:Name="NewProductCategory" Title="Selecciona una categoría" ItemsSource="{Binding Categories}" HeightRequest="56" />
+                                <Button Text="Nueva categoría" Clicked="OnNewCategoryClicked" />
 
                                 <Label Text="Nombre" FontSize="16" FontAttributes="Bold" />
                                 <Entry x:Name="NewProductName" Placeholder="Ej. Sundae de fresa" Style="{StaticResource TouchEntryStyle}"
